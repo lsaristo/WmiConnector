@@ -26,7 +26,7 @@ namespace AutoBack {
         /// <see cref="Constants.cs"/> 
         /// <see cref="config.xml"/>
         public static void log(string level, string message) {
-            if (Driver.LOG_ENABLED) {
+            if (Driver.LOG) {
                 if (logFile == null || logPath == null) {
                     logFile = Driver.getConfigOption(Constants.LOGFILE);
                     logPath = Driver.getConfigOption(Constants.LOGPATH);
@@ -44,7 +44,7 @@ namespace AutoBack {
         /// <remarks>This method does nothing if Driver.DEBUG is false.</remarks>
         /// <param name="message">Message to write.</param>
         public static void debug(string message) {
-            if (Driver.DEBUG_ENABLED)
+            if (Driver.DEBUG)
                 Console.WriteLine("[ DEBUG ]: " + message);
         }
 
@@ -55,7 +55,7 @@ namespace AutoBack {
         /// <param name="condition">Condition that must be true</param>
         /// <param name="message">Error message if condition is false to log.</param>
         public static void assertTrue(bool condition, string message) {
-            if (Driver.DEBUG_ENABLED) {
+            if (Driver.DEBUG) {
                 if (!condition) {
                     debug(message + " " + condition);
                     throw new Exception();
