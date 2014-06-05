@@ -1,4 +1,5 @@
 ﻿using System.Xml.Linq;
+
 namespace AutoBack 
 {
 /// <summary>
@@ -67,5 +68,9 @@ static class Constants
     // Log messages
     public static string LOG_SUCCESS = "Successfully executed command";
     public static string LOG_FAIL = "Could not execute command";
+
+    // Exit status
+    public static int EXIT_FAILURE = -1;
+    public static int EXIT_SUCCESS = 1;
 }
 }

@@ -27,14 +27,20 @@ public class Driver
     /// </summary>
     /// <param name="args">Desired class to target. Refer to targets.xml</param>
     public static void Main(string[] args) {
-        parseProgramArgs(args);
-        parseConfigOptions();
-        string outString = null;
-        foreach (string host in classesToTarget)
-            outString += host + " ";
-        printWelcome(outString);
-        parseTargetFile();
-        parseTargetFileXLS();
+        try { 
+            parseProgramArgs(args);
+            parseConfigOptions();
+            string outString = null;
+        
+            foreach (string host in classesToTarget)
+                outString += host + " ";
+
+            printWelcome(outString);
+            parseTargetFile();
+            parseTargetFileXLS();
+        } catch(Exception e) {
+        }
+
         foreach (RemoteHost host in remoteHostList) 
             if(host.Enabled)
                 host.execute();
@@ -46,13 +52,15 @@ public class Driver
     private static void printWelcome(string outString) {
         string welcomeString = 
             "###############################"
+            + Environment.NewLine
             + "AutoRDrive has started"
+            + Environment.NewLine
             + "Targeting class(s) : "
             + outString
+            + Environment.NewLine
             + "###############################";
        Lib.log(Constants.LL_INFO, welcomeString);
     }
-
 
     /// <summary>
     /// Read in data from an XML-formatted file.
@@ -64,7 +72,7 @@ public class Driver
             return XDocument.Load(file);
         } catch (Exception e) {
             Lib.log(Constants.LL_ERROR, Constants.ERROR_FILE_PARSE + file + " " + e);
-            throw new Exception();
+            throw e;
         }
     }
 
@@ -98,24 +106,17 @@ public class Driver
     /// Parse program configuration options and set config variables. 
     /// </summary>
     private static void parseConfigOptions() {
-        DEBUG = 
-            getConfigOption(Constants.DEBUG)
-            .ToLower()
-            .Equals(Constants.TRUE);
-        LOG = 
-            getConfigOption(Constants.LOGGING)
-            .ToLower()
-            .Equals(Constants.TRUE);
-        NO_EXECUTE = 
-            getConfigOption(Constants.WHATIF)
-            .ToLower()
-            .Equals(Constants.TRUE);
-        targetXML = 
-            readFileToXML(
-                getConfigOption(Constants.TARGETFILEPATH) 
-                + "\\"
-                + getConfigOption(Constants.TARGETXMLFILENAME)
-            );
+        Func<XName, bool> cond = 
+            x => getConfigOption(x).ToLower().Equals(Constants.TRUE);
+
+        DEBUG = cond(Constants.DEBUG);
+        LOG = cond(Constants.LOGGING);
+        NO_EXECUTE = cond(Constants.WHATIF);
+        targetXML = readFileToXML(
+            getConfigOption(Constants.TARGETFILEPATH) 
+            + "\\"
+            + getConfigOption(Constants.TARGETXMLFILENAME)
+        );
     }
 
     /// <summary>
@@ -130,9 +131,8 @@ public class Driver
             + "\\"
             + getConfigOption(Constants.TARGETFILENAME)
         );
-        OleDbDataAdapter da = new OleDbDataAdapter(Constants.QUERY, conn);
         DataTable dt = new DataTable();
-        da.Fill(dt);
+        (new OleDbDataAdapter(Constants.QUERY, conn)).Fill(dt);
 
         foreach (DataRow dr in dt.Rows) {
             if (classesToTarget.Contains(dr[@"Class"].ToString().ToLower())) {
@@ -171,8 +171,12 @@ public class Driver
     /// Read hosts in from targets.xml and populate the list of RemoteHosts.
     /// </summary>
     private static void parseTargetFile() {
-        foreach (XElement classTypes in targetXML.Descendants(Constants.CLASSES).Elements()) {
-            if (classesToTarget.Contains<string>(classTypes.Element(Constants.CLASSNAME).Value.ToLower())) {
+        IEnumerable<XElement> typeList = targetXML.Descendants(Constants.CLASSES).Elements();
+        Func<XElement, bool> condition =
+            x => classesToTarget.Contains<string>(x.Element(Constants.CLASSNAME).Value.ToLower());
+
+        foreach (XElement classTypes in typeList) {
+            if (condition(classTypes)) {
                 foreach (XElement param in classTypes.Elements(Constants.HOST)) {
                     remoteHostList.Add(
                         new RemoteHost {

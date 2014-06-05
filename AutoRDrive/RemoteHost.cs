@@ -28,10 +28,9 @@ class RemoteHost
     /// Connect to the remote host and execute the command. See config.xml. 
     /// </summary>
     public bool execute() {
-        makeSaveDirectory();
-        generateRdi();
-        
         try {
+            makeSaveDirectory();
+            generateRdi();
             Scope = new ManagementScope("\\\\" + HostAddress + Constants.WMI_ROOT);
             Scope.Connect();
             ConnectionClass = new ManagementClass(
