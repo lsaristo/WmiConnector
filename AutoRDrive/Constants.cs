@@ -19,6 +19,7 @@ static class Constants
     public static string OTHER = "other";
     public static string METHOD = "Create";
     public static string PLACEHOLDER = "IMAGE_PLACEHOLDER";
+    public static string FALLBACK_LOG = "AutoRDrive_Fallback_Log";
     
     // Valid log severity levels. 
     public static string LL_ERROR = "Error";
@@ -72,5 +73,5 @@ static class Constants
     // Exit status
     public static int EXIT_FAILURE = -1;
     public static int EXIT_SUCCESS = 1;
-}
-}
+} // End Constants class
+} // End namespace

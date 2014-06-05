@@ -7,7 +7,6 @@ using System.IO;
 
 namespace AutoBack 
 {
-
     /// <summary>
     /// Common library routines used by the program. 
     /// Debugging and logging are done here.
@@ -29,13 +28,17 @@ namespace AutoBack
         /// <see cref="config.xml"/>
         public static void log(string level, string message) {
             if (Driver.LOG) {
-                if (logFile == null || logPath == null) {
-                    logFile = Driver.getConfigOption(Constants.LOGFILE);
-                    logPath = Driver.getConfigOption(Constants.LOGPATH);
-                }
-                
-                using(StreamWriter w = File.AppendText(logPath + "\\" + logFile)) {
-                    w.Write(DateTime.Now.ToString() + ": " + message + Environment.NewLine);
+                logFile = logFile == null ? Driver.getConfigOption(Constants.LOGFILE) : logFile;
+                logPath = logPath == null ? Driver.getConfigOption(Constants.LOGPATH) : logPath;
+
+                try {
+                    using(StreamWriter w = File.AppendText(logPath + "\\" + logFile)) {
+                        w.Write(DateTime.Now.ToString() + ": " + message + Environment.NewLine);
+                    }
+                } catch(Exception e) {
+                    using(StreamWriter w = File.AppendText(Environment.CurrentDirectory + Constants.FALLBACK_LOG)) {
+                        w.Write(DateTime.Now.ToString() + ": (LOGGING FAILURE) " + message + Environment.NewLine);
+                    }
                 }
             }
         }
@@ -46,8 +49,10 @@ namespace AutoBack
         /// <remarks>This method does nothing if Driver.DEBUG is false.</remarks>
         /// <param name="message">Message to write.</param>
         public static void debug(string message) {
-            if (Driver.DEBUG)
+            if(Driver.DEBUG) {
                 Console.WriteLine("[ DEBUG ]: " + message);
+                log(Constants.LL_INFO, "[ DEBUG ]" + message);
+            }
         }
 
         /// <summary>
@@ -57,11 +62,9 @@ namespace AutoBack
         /// <param name="condition">Condition that must be true</param>
         /// <param name="message">Error message if condition is false to log.</param>
         public static void assertTrue(bool condition, string message) {
-            if (Driver.DEBUG) {
-                if (!condition) {
-                    debug(message + " " + condition);
-                    throw new Exception();
-                }
+            if (Driver.DEBUG && !condition) {
+                debug(message + " " + condition);
+                Environment.Exit(Constants.EXIT_FAILURE);
             }              
         }
 
@@ -69,5 +72,4 @@ namespace AutoBack
             assertTrue(condition, Constants.ERROR_ASSERT);
         }
     }
-
 }

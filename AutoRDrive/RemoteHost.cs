@@ -33,19 +33,10 @@ class RemoteHost
             generateRdi();
             Scope = new ManagementScope("\\\\" + HostAddress + Constants.WMI_ROOT);
             Scope.Connect();
-            ConnectionClass = new ManagementClass(
-                Scope, new ManagementPath(Constants.CONNECTION_CLASS), null
-            );
+            ManagementPath mp = new ManagementPath(Constants.CONNECTION_CLASS);
+            ConnectionClass = new ManagementClass(Scope, mp, null);
             ProgramArgs = ConnectionClass.GetMethodParameters(Constants.METHOD);
             ProgramArgs["CommandLine"] = ArgsSetter;
-
-            if (Enabled) {
-                ConnectionClass.InvokeMethod(Constants.METHOD, ProgramArgs, null);
-                Lib.log(Constants.LL_INFO, Constants.LOG_SUCCESS + " " + HostName);
-            } else {
-                Lib.log(Constants.LL_INFO, "Connected to " + HostName + " but not enabled");
-            }
-
         } catch (Exception e) {
             Lib.log(Constants.LL_ERROR, HostName + ": " + e.Message);
             return false;
@@ -58,7 +49,8 @@ class RemoteHost
     /// </summary>
     public void generateRdi() {
         string fileText = File.ReadAllText(
-            Driver.getConfigOption(Constants.RDIMASTERPATH) + "\\" 
+            Driver.getConfigOption(Constants.RDIMASTERPATH) 
+            + "\\" 
             + Driver.getConfigOption(Constants.RDIMASTER)
         );
         string outputFile = 
