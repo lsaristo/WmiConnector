@@ -5,12 +5,14 @@ using System.Xml.Linq;
 using System.Data;
 using System.Data.OleDb;
 
-namespace AutoBack {
+namespace AutoBack 
+{
 
 /// <summary>
 /// Primary driver class for this program. Execution begins and ends here. 
 /// </summary>
-public class Driver {
+public class Driver 
+{
     private static XDocument targetXML = null; 
     private static XDocument configXML = readFileToXML(Constants.CONFIG_FILE);
     private static List<string> classesToTarget = new List<string>();

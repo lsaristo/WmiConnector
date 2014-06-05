@@ -1,10 +1,11 @@
 ﻿using System.Xml.Linq;
-namespace AutoBack {
+namespace AutoBack 
+{
 /// <summary>
 /// Global program constants and configuration parameters.
 /// </summary>
-static class Constants {
-
+static class Constants 
+{
     // Configuration parameters
     public static string CONFIG_FILE = @"\\backups\computerimagingprimary\resources\bin\config.xml";
     public static string CONNECTION_CLASS = "win32_process";

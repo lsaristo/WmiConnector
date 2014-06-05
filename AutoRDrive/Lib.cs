@@ -5,14 +5,16 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 
-namespace AutoBack {
+namespace AutoBack 
+{
 
     /// <summary>
     /// Common library routines used by the program. 
     /// Debugging and logging are done here.
     /// </summary>
     /// <see cref="Constants.cs"/>
-    static class Lib {
+    static class Lib 
+    {
         private static string logFile = null;
         private static string logPath = null;
 

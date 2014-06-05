@@ -3,13 +3,15 @@ using System.Management;
 using System.IO;
 using System.Data;
 using System.Data.OleDb;
-namespace AutoBack {
+namespace AutoBack 
+{
 
 /// <summary>
 /// Container class for a remote host computer. Each host listed in targets.xml
 /// will be represented by an instantiation of this class.
 /// </summary>
-class RemoteHost {
+class RemoteHost 
+{
     public bool Enabled { get; set; }
     public string SaveDir { get; set; }
     public string HostAddress { get; set; }
