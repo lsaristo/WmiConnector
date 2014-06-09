@@ -17,8 +17,8 @@ public class Driver
     private static XDocument configXML = readFileToXML(Constants.CONFIG_FILE);
     private static List<string> classesToTarget = new List<string>();
     private static List<RemoteHost> remoteHostList = new List<RemoteHost>();
-    public static bool LOG = false;
-    public static bool DEBUG = false;
+    public static bool LOG = true;
+    public static bool DEBUG = true;
     public static bool NO_EXECUTE = false;
 
     /// <summary>
@@ -27,36 +27,47 @@ public class Driver
     /// </summary>
     /// <param name="args">Desired class to target. Refer to targets.xml</param>
     public static void Main(string[] args) {
-        try { 
+        try {
+            printWelcome();
             parseProgramArgs(args);
             parseConfigOptions();
+
+            Lib.debug("Program Flags: Debug: " + DEBUG + ", Log: " + LOG + ", NO_EXECUTE: " + NO_EXECUTE);    
+            
             string outString = null;
-        
             foreach (string host in classesToTarget)
                 outString += host + " ";
 
-            printWelcome(outString);
+            Lib.log(Constants.LL_INFO, "Targeting class(s): " + outString);
             parseTargetFile();
             parseTargetFileXLS();
         } catch(Exception e) {
+            Lib.log(Constants.LL_ERROR, "FATAL ERROR: " + e.Message + " " + e.ToString());
+            System.Environment.Exit(Constants.EXIT_FAILURE);
         }
 
-        foreach (RemoteHost host in remoteHostList) 
-            if(host.Enabled)
+        Lib.debug("Trying " + remoteHostList.Count + " hosts");
+        foreach (RemoteHost host in remoteHostList) {
+            Lib.debug("Calling host " + host.HostName + " at " + host.HostAddress);
+            if (host.Enabled) {
                 host.execute();
+            } else {
+                Lib.debug(host.HostName + " is disabled, skipping execute()");
+            }
+        }
+        Lib.debug("Finished execution, leaving with exit code " + Constants.EXIT_SUCCESS);
+        System.Environment.Exit(Constants.EXIT_SUCCESS);
     }
 
     /// <summary>
     /// Print a welcome message to the log. 
     /// </summary>
-    private static void printWelcome(string outString) {
+    private static void printWelcome() {
         string welcomeString = 
-            "###############################"
+            Environment.NewLine
+            + "###############################"
             + Environment.NewLine
             + "AutoRDrive has started"
-            + Environment.NewLine
-            + "Targeting class(s) : "
-            + outString
             + Environment.NewLine
             + "###############################";
        Lib.log(Constants.LL_INFO, welcomeString);
@@ -117,6 +128,10 @@ public class Driver
             + "\\"
             + getConfigOption(Constants.TARGETXMLFILENAME)
         );
+
+        Lib.assertTrue(DEBUG != null, Constants.ERROR_CONFIG);
+        Lib.assertTrue(LOG != null, Constants.ERROR_CONFIG);
+        Lib.assertTrue(NO_EXECUTE != null, Constants.ERROR_CONFIG);
     }
 
     /// <summary>
@@ -139,7 +154,7 @@ public class Driver
                 remoteHostList.Add(
                     new RemoteHost {
                         HostAddress = dr["IP Address"].ToString()
-                        ,HostName = dr["Net Name"].ToString()
+                        ,HostName = dr["Net Name"].ToString().ToUpper()
                         ,HostClass = dr["class"].ToString()
                         ,PrimaryUser = dr["Primary User"].ToString()
                         ,SaveDir = 

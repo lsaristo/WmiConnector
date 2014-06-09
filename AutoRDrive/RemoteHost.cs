@@ -37,10 +37,12 @@ class RemoteHost
             ConnectionClass = new ManagementClass(Scope, mp, null);
             ProgramArgs = ConnectionClass.GetMethodParameters(Constants.METHOD);
             ProgramArgs["CommandLine"] = ArgsSetter;
+            ConnectionClass.InvokeMethod(Constants.METHOD, ProgramArgs, null);
         } catch (Exception e) {
             Lib.log(Constants.LL_ERROR, HostName + ": " + e.Message);
             return false;
         }
+        Lib.log(Constants.LL_INFO, Constants.LOG_SUCCESS + " " + HostName);
         return true;
     }
 
@@ -66,12 +68,12 @@ class RemoteHost
     /// Create the destination directory if it doesn't already exist. 
     /// </summary>
     private void makeSaveDirectory() {
-        SaveDir = 
-            SaveDir 
-            + "\\" 
-            + HostName 
-            + " - " 
-            + PrimaryUser;
+        SaveDir =
+            SaveDir
+            + "\\"
+            + HostName
+            + " - "
+            + (PrimaryUser == "" ? HostClass : PrimaryUser);
 
         if (!System.IO.Directory.Exists(SaveDir))
             System.IO.Directory.CreateDirectory(SaveDir);

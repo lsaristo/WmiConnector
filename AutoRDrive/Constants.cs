@@ -62,9 +62,10 @@ static class Constants
 
     // Error messages
     public static string ERROR_FILE_PARSE = "Error reading file";
-    public static string ERROR_ARGUMENTS = "Error invalid program arguments";
+    public static string ERROR_ARGUMENTS = "FATAL ERROR: invalid program arguments";
     public static string ERROR_ASSERT = "Error assertion failed";
     public static string ERROR_CONNECT = "Error connecting to target WMI";
+    public static string ERROR_CONFIG = "FATAL ERROR: Malformed config file";
     
     // Log messages
     public static string LOG_SUCCESS = "Successfully executed command";

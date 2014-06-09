@@ -40,6 +40,8 @@ namespace AutoBack
                         w.Write(DateTime.Now.ToString() + ": (LOGGING FAILURE) " + message + Environment.NewLine);
                     }
                 }
+                if (Driver.DEBUG)
+                    Console.WriteLine(DateTime.Now.ToShortDateString() + ": " + message);
             }
         }
 
@@ -50,8 +52,7 @@ namespace AutoBack
         /// <param name="message">Message to write.</param>
         public static void debug(string message) {
             if(Driver.DEBUG) {
-                Console.WriteLine("[ DEBUG ]: " + message);
-                log(Constants.LL_INFO, "[ DEBUG ]" + message);
+                log(Constants.LL_INFO, "[ DEBUG ]: " + message);
             }
         }
 
