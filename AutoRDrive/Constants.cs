@@ -73,6 +73,6 @@ static class Constants
 
     // Exit status
     public static int EXIT_FAILURE = -1;
-    public static int EXIT_SUCCESS = 1;
+    public static int EXIT_SUCCESS = 0;
 } // End Constants class
 } // End namespace
