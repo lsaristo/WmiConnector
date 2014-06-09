@@ -70,6 +70,8 @@ static class Constants
     // Log messages
     public static string LOG_SUCCESS = "Successfully executed command";
     public static string LOG_FAIL = "Could not execute command";
+    public static string TEST_SUCCESS = "Successfully connected to host";
+    public static string TEST_FAIL = "Error: Could not contact host";
 
     // Exit status
     public static int EXIT_FAILURE = -1;

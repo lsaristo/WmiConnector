@@ -47,6 +47,25 @@ class RemoteHost
     }
 
     /// <summary>
+    /// Test connection to the RemoteHost.
+    /// </summary>
+    public void testConnection() {
+        try {
+            Scope = new ManagementScope("\\\\" + HostAddress + Constants.WMI_ROOT);
+            Scope.Connect();
+            ManagementPath mp = new ManagementPath(Constants.CONNECTION_CLASS);
+            ConnectionClass = new ManagementClass(Scope, mp, null);
+            ProgramArgs = ConnectionClass.GetMethodParameters(Constants.METHOD);
+            ConnectionClass.InvokeMethod(Constants.METHOD, ProgramArgs, null);
+        } catch (Exception e) {
+            Lib.log(Constants.LL_ERROR, Constants.TEST_FAIL + " " + HostName + ": " + e.Message);
+            return;
+        }
+        Lib.log(Constants.LL_INFO, Constants.TEST_SUCCESS + " " + HostName);
+    }
+
+
+    /// <summary>
     /// Generate the custom RDI file from this remote host.
     /// </summary>
     public void generateRdi() {

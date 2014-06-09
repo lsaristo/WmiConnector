@@ -52,7 +52,8 @@ public class Driver
             if (host.Enabled) {
                 host.execute();
             } else {
-                Lib.debug(host.HostName + " is disabled, skipping execute()");
+                Lib.debug(host.HostName + " is disabled, testing connection only");
+                host.testConnection();
             }
         }
         Lib.debug("Finished execution, leaving with exit code " + Constants.EXIT_SUCCESS);
