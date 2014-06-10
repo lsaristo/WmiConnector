@@ -9,8 +9,15 @@ namespace AutoBack
 {
 
 /// <summary>
-/// Primary driver class for this program. Execution begins and ends here. 
+/// Primary driver class for this program. This class facilitates the running 
+/// logic of the program.
 /// </summary>
+/// <remarks>
+/// The file path for config.xml, the program's primary configuration file, is
+/// hard-coded in Constants. All other file paths and configuration options are
+/// loaded from config.xml. Note that UNC paths require read/write access in the 
+/// security context of the user running this program. 
+/// </remarks>
 public class Driver 
 {
     private static XDocument targetXML = null; 
@@ -25,9 +32,16 @@ public class Driver
     /// Main program entry point. Populate host list and execute commands
     /// against every host. 
     /// </summary>
-    /// <param name="args">Desired class to target. Refer to targets.xml</param>
+    /// <param name="args">Desired class to target. See Constants.cs for supported
+    /// arguments.
+    /// </param>
     public static void Main(string[] args) {
         try {
+            if(args.length == 0) {
+                printHelp();
+                Environment.Exit(Constants.EXIT_FAILURE);
+            }
+
             printWelcome();
             parseProgramArgs(args);
             parseConfigOptions();
@@ -59,6 +73,16 @@ public class Driver
         Lib.debug("Finished execution, leaving with exit code " + Constants.EXIT_SUCCESS);
         System.Environment.Exit(Constants.EXIT_SUCCESS);
     }
+
+
+    /// <summary>
+    /// Print a help message to the Console. 
+    /// </summary>
+    private static void printHelp() {
+        string helpString = "Usage: AutoRDrive.exe [class1] [class2] ..." + Environment.NewLine;        
+        Console.WriteLine(helpString);
+    }
+
 
     /// <summary>
     /// Print a welcome message to the log. 
@@ -102,7 +126,9 @@ public class Driver
     }
 
     /// <summary>
-    /// Process command line arguments.
+    /// Process command line arguments. See Constants for a list of supported arguments. 
+    /// If any arguments provided are invalid, an Exception is thrown and the program
+    /// will exit with status EXIT_FAILURE. 
     /// </summary>
     private static void parseProgramArgs(string[] programArgs) {
         foreach(string arg in programArgs) {
@@ -115,7 +141,9 @@ public class Driver
     }
 
     /// <summary>
-    /// Parse program configuration options and set config variables. 
+    /// Parse program configuration options and set config variables. If any of the required
+    /// configuration parameters are missing from config.xml, an Exception is thrown and the
+    /// program will exit with status EXIT_FAILURE.  
     /// </summary>
     private static void parseConfigOptions() {
         Func<XName, bool> cond = 
@@ -136,8 +164,15 @@ public class Driver
     }
 
     /// <summary>
-    /// Read hosts in from Doc_0001473
+    /// Read hosts in from a copy of Doc_0001473 stored in the directory given 
+    /// by the appropriate config parameters in config.xml. 
     /// </summary>
+    /// <remarks>
+    /// The Excel file must not be in use when this method executes or it will
+    /// fail with an IO Exception. Note that the "IP Address" column must be 
+    /// in cononical form (specifically, no leading zeros are supported) or the 
+    /// targeting for the coorsponding host will fail. 
+    /// </remarks>
     private static void parseTargetFileXLS() {
         OleDbConnection conn = new OleDbConnection(
             "Provider="
@@ -186,6 +221,12 @@ public class Driver
     /// <summary>
     /// Read hosts in from targets.xml and populate the list of RemoteHosts.
     /// </summary>
+    /// <remarks>
+    /// This file is used to manually add systems to be added to the backup roster
+    /// that don't have any natural place in the standard Excel master IP matrix.
+    /// The only supported class that will be processed by this file is "Other". The
+    /// remaining classes listed are deprecated and will be removed in future releases.
+    /// </remarks>
     private static void parseTargetFile() {
         IEnumerable<XElement> typeList = targetXML.Descendants(Constants.CLASSES).Elements();
         Func<XElement, bool> condition =

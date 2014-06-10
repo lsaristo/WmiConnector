@@ -7,7 +7,7 @@ namespace AutoBack
 {
 
 /// <summary>
-/// Container class for a remote host computer. Each host listed in targets.xml
+/// Container class for a remote host computer. Each target host 
 /// will be represented by an instantiation of this class.
 /// </summary>
 class RemoteHost 
@@ -26,6 +26,8 @@ class RemoteHost
 
     /// <summary>
     /// Connect to the remote host and execute the command. See config.xml. 
+    /// If anything goes wrong during the process, the applicable exception
+    /// is caught and we return false. 
     /// </summary>
     public bool execute() {
         try {
@@ -47,7 +49,9 @@ class RemoteHost
     }
 
     /// <summary>
-    /// Test connection to the RemoteHost.
+    /// Test connection to the RemoteHost. This method is similar to execute() but
+    /// only attempts to establish a WMI connection to the RemoteHost and does not
+    /// actually execute any commands.
     /// </summary>
     public void testConnection() {
         try {
@@ -68,6 +72,10 @@ class RemoteHost
     /// <summary>
     /// Generate the custom RDI file from this remote host.
     /// </summary>
+    /// <remarks>
+    /// The save directory for the resultant RDI is given by the appropriate
+    /// config parameters in config.xml.
+    /// </remarks>
     public void generateRdi() {
         string fileText = File.ReadAllText(
             Driver.getConfigOption(Constants.RDIMASTERPATH) 
@@ -86,6 +94,11 @@ class RemoteHost
     /// <summary>
     /// Create the destination directory if it doesn't already exist. 
     /// </summary>
+    /// <remarks>
+    /// The destination directory is given by the base save directory as given
+    /// by the appropriate config parameters in config.xml concatenated with 
+    /// the hostname and primary user of this RemoteHost.
+    /// </remarks>
     private void makeSaveDirectory() {
         SaveDir =
             SaveDir
