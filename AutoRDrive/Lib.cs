@@ -20,7 +20,6 @@ namespace AutoBack
         /// <summary>
         /// Write an event to the System log.
         /// </summary>
-        /// <remarks>Logging must be enabled in the program config file</remarks>
         /// <param name="level">Severity level. Valid inputs are those
         /// logging severity levels supported by the Windows API.</param>
         /// <param name="message">Message to log.</param>
@@ -28,27 +27,39 @@ namespace AutoBack
         /// <see cref="config.xml"/>
         public static void log(string level, string message) {
             if (Driver.LOG) {
-                logFile = logFile == null ? Driver.getConfigOption(Constants.LOGFILE) : logFile;
-                logPath = logPath == null ? Driver.getConfigOption(Constants.LOGPATH) : logPath;
-
                 try {
-                    using(StreamWriter w = File.AppendText(logPath + "\\" + logFile)) {
-                        w.Write(DateTime.Now.ToString() + ": " + message + Environment.NewLine);
+                    logFile = Driver.getConfigOption(Constants.LOGFILE)
+                    logPath = Driver.getConfigOption(Constants.LOGPATH)
+                    string fullLogPath = logPath + "\\" + logFile;
+                    string fallbackLog = 
+                        Environment.CurrentDirectory + Constants.FALLBACK_LOG;
+                    string logString = 
+                        DateTime.Now.ToString() 
+                        + ": " 
+                        + message 
+                        + Environment.NewLine;
+
+                    using(StreamWriter w = File.AppendText(fullLogPath)) {
+                        w.Write(logString);
                     }
                 } catch(Exception e) {
-                    using(StreamWriter w = File.AppendText(Environment.CurrentDirectory + Constants.FALLBACK_LOG)) {
-                        w.Write(DateTime.Now.ToString() + ": (LOGGING FAILURE) " + message + Environment.NewLine);
+                    using(StreamWriter w = File.AppendText(fallbackLog)) {
+                        w.Write(logString);
                     }
                 }
-                if (Driver.DEBUG)
-                    Console.WriteLine(DateTime.Now.ToShortDateString() + ": " + message);
+
+                if (Driver.DEBUG) {
+                    Console.WriteLine(logString);
+                }
             }
         }
 
         /// <summary>
-        /// Write debugging output to the console. Enabled with '-d' program argument. 
+        /// Write debugging output to the console. Enabled with '-d' program 
+        /// argument. 
         /// </summary>
-        /// <remarks>This method does nothing if Driver.DEBUG is false.</remarks>
+        /// <remarks>This method does nothing if Driver.DEBUG is false.
+        /// </remarks>
         /// <param name="message">Message to write.</param>
         public static void debug(string message) {
             if(Driver.DEBUG) {
@@ -59,9 +70,11 @@ namespace AutoBack
         /// <summary>
         /// Assert that a condition holds. Used for debugging. 
         /// </summary>
-        /// <remarks>This method does nothing if Driver.DEBUG is false.</remarks>
+        /// <remarks>This method does nothing if Driver.DEBUG is false.
+        /// </remarks>
         /// <param name="condition">Condition that must be true</param>
-        /// <param name="message">Error message if condition is false to log.</param>
+        /// <param name="message">Error message if condition is false to log.
+        /// </param>
         public static void assertTrue(bool condition, string message) {
             if (Driver.DEBUG && !condition) {
                 debug(message + " " + condition);

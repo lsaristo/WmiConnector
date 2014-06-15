@@ -32,8 +32,8 @@ public class Driver
     /// Main program entry point. Populate host list and execute commands
     /// against every host. 
     /// </summary>
-    /// <param name="args">Desired class to target. See Constants.cs for supported
-    /// arguments.
+    /// <param name="args">Desired class to target. See Constants.cs for 
+    /// supported arguments.
     /// </param>
     public static void Main(string[] args) {
         try {
@@ -41,12 +41,18 @@ public class Driver
                 printHelp();
                 Environment.Exit(Constants.EXIT_FAILURE);
             }
-
             printWelcome();
             parseProgramArgs(args);
             parseConfigOptions();
 
-            Lib.debug("Program Flags: Debug: " + DEBUG + ", Log: " + LOG + ", NO_EXECUTE: " + NO_EXECUTE);    
+            Lib.debug( 
+                "Program Flags: Debug: " 
+                + DEBUG 
+                + ", Log: " 
+                + LOG 
+                + ", NO_EXECUTE: " 
+                + NO_EXECUTE;
+            );
             
             string outString = null;
             foreach (string host in classesToTarget)
@@ -56,22 +62,40 @@ public class Driver
             parseTargetFile();
             parseTargetFileXLS();
         } catch(Exception e) {
-            Lib.log(Constants.LL_ERROR, "FATAL ERROR: " + e.Message + " " + e.ToString());
+            string error = 
+                "FATAL ERROR: " 
+                + e.Message 
+                + " " 
+                + e.ToString());
+
+            Lib.log(Constants.LL_ERROR, error);
             System.Environment.Exit(Constants.EXIT_FAILURE);
         }
 
-        Lib.debug("Trying " + remoteHostList.Count + " hosts");
+        runMainLoop();
+        Lib.debug("Finished execution");
+        System.Environment.Exit(Constants.EXIT_SUCCESS);
+    }
+
+    /// <summary>
+    /// Iterate through the remoteHostList and execute() or test() each host.
+    /// </summary>
+    private static void runMainLoop() {
         foreach (RemoteHost host in remoteHostList) {
-            Lib.debug("Calling host " + host.HostName + " at " + host.HostAddress);
+            Lib.debug(
+                "Calling " 
+                + host.HostName 
+                + " at " 
+                + host.HostAddress
+            );
+
             if (host.Enabled) {
                 host.execute();
             } else {
-                Lib.debug(host.HostName + " is disabled, testing connection only");
+                Lib.debug(host.HostName + " is disabled");
                 host.testConnection();
             }
         }
-        Lib.debug("Finished execution, leaving with exit code " + Constants.EXIT_SUCCESS);
-        System.Environment.Exit(Constants.EXIT_SUCCESS);
     }
 
 
@@ -95,7 +119,7 @@ public class Driver
             + "AutoRDrive has started"
             + Environment.NewLine
             + "###############################";
-       Lib.log(Constants.LL_INFO, welcomeString);
+        Lib.log(Constants.LL_INFO, welcomeString);
     }
 
     /// <summary>
@@ -126,9 +150,9 @@ public class Driver
     }
 
     /// <summary>
-    /// Process command line arguments. See Constants for a list of supported arguments. 
-    /// If any arguments provided are invalid, an Exception is thrown and the program
-    /// will exit with status EXIT_FAILURE. 
+    /// Process command line arguments. See Constants for a list of supported
+    /// arguments. If any arguments provided are invalid, an Exception is 
+    /// thrown and the program will exit with status EXIT_FAILURE. 
     /// </summary>
     private static void parseProgramArgs(string[] programArgs) {
         foreach(string arg in programArgs) {
@@ -141,9 +165,9 @@ public class Driver
     }
 
     /// <summary>
-    /// Parse program configuration options and set config variables. If any of the required
-    /// configuration parameters are missing from config.xml, an Exception is thrown and the
-    /// program will exit with status EXIT_FAILURE.  
+    /// Parse program configuration options and set config variables. If any of 
+    /// the required configuration parameters are missing from config.xml, an 
+    /// Exception is thrown and thevprogram will exit with status EXIT_FAILURE.  
     /// </summary>
     private static void parseConfigOptions() {
         Func<XName, bool> cond = 
@@ -222,13 +246,15 @@ public class Driver
     /// Read hosts in from targets.xml and populate the list of RemoteHosts.
     /// </summary>
     /// <remarks>
-    /// This file is used to manually add systems to be added to the backup roster
-    /// that don't have any natural place in the standard Excel master IP matrix.
-    /// The only supported class that will be processed by this file is "Other". The
-    /// remaining classes listed are deprecated and will be removed in future releases.
+    /// This file is used to manually add systems to be added to the backup 
+    /// roster that don't have any natural place in the standard Excel master 
+    /// IP matrix. The only supported class that will be processed by this file 
+    /// is "Other". The remaining classes listed are deprecated and will be 
+    /// removed in future releases.
     /// </remarks>
     private static void parseTargetFile() {
-        IEnumerable<XElement> typeList = targetXML.Descendants(Constants.CLASSES).Elements();
+        IEnumerable<XElement> typeList = 
+            targetXML.Descendants(Constants.CLASSES).Elements();
         Func<XElement, bool> condition =
             x => classesToTarget.Contains<string>(x.Element(Constants.CLASSNAME).Value.ToLower());
 
