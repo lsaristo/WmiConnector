@@ -1,0 +1,1 @@
+This is a simple program designed to be a framework for connecting to remote Windows workstations and executing a command against them. We use Windows Remote Management to connect and WMI to execute a child process on the remote machine. 
