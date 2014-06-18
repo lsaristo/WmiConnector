@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Management;
+using System.Net;
+using System.Net.NetworkInformation;
 using System.IO;
 using System.Data;
 using System.Data.OleDb;
@@ -54,6 +56,18 @@ class RemoteHost
     /// actually execute any commands.
     /// </summary>
     public void testConnection() {
+        boolean pingSuccess = (new Ping()).Send(HostAddress) == IPStatus.Sucess; 
+        
+        if(!pingSuccess) {
+            Lib.log(
+                Constants.LL_WARN 
+                , Constants.TEST_FAIL
+                + HostName
+                + " Didn't respond to ICMP Echo Request"
+            );
+            return;
+        }
+
         try {
             Scope = new ManagementScope("\\\\" + HostAddress + Constants.WMI_ROOT);
             Scope.Connect();
@@ -67,7 +81,6 @@ class RemoteHost
         }
         Lib.log(Constants.LL_INFO, Constants.TEST_SUCCESS + " " + HostName);
     }
-
 
     /// <summary>
     /// Generate the custom RDI file from this remote host.
@@ -110,5 +123,6 @@ class RemoteHost
         if (!System.IO.Directory.Exists(SaveDir))
             System.IO.Directory.CreateDirectory(SaveDir);
     }
+
 } // End of RemoteHost class. 
 } // End of namespace
