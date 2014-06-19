@@ -33,6 +33,7 @@ class RemoteHost
     /// </summary>
     public bool execute() {
         try {
+            if (!Enabled && !Driver.NO_EXECUTE) { return false; }
             if (!testConnection() || !Enabled) { return false; }
             makeSaveDirectory();
             generateRdi();

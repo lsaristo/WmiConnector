@@ -88,8 +88,6 @@ public class Driver
                 + " at " 
                 + host.HostAddress
             );
-            if (!host.Enabled)
-                Lib.log(Constants.LL_INFO, host.HostName + " is disabled. Testing only");
             host.execute();
         }
     }
@@ -269,9 +267,7 @@ public class Driver
                                 + "\\" 
                                 + getConfigOption(Constants.EXECUTABLE_NAME)
                             ,Enabled = 
-                                NO_EXECUTE 
-                                ? false 
-                                : param.Element(Constants.ENABLED)
+                                    param.Element(Constants.ENABLED)
                                     .Value
                                     .Equals(Constants.TRUE)
                             ,RdiFile = 
