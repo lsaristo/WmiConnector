@@ -31,32 +31,32 @@ static class Constants
     public const string QUERY = @"Select * from [Sheet1$A2:L]";
 
     // XName elements. These are used for XML parsing and must match XML tags. 
-    public static XName SAVEDIRBASE = "SaveDirectoryBasePath";
-    public static XName OPTIONS = "Options";
-    public static XName EXECUTABLE_PATH = "ExecutablePath";
-    public static XName EXECUTABLE_NAME = "ExecutableName";
-    public static XName CLASS = "Class";
-    public static XName CLASSNAME = "ClassName";
-    public static XName HOST_NAME = "ComputerName";
-    public static XName HOST = "Host";
-    public static XName HOST_ADDRESS = "Address";
-    public static XName ENABLED = "Enabled";
-    public static XName CLASSES = "Classes";
-    public static XName DEBUG = "Debug";
-    public static XName USER = "User";
-    public static XName LOGGING = "Logging";
-    public static XName WHATIF = "Whatif";
-    public static XName LOGFILE = "Logfile";
-    public static XName LOGPATH = "Logpath";
-    public static XName SAVEDIR = "Savedir";
-    public static XName RDIMASTERPATH = "RdiMasterPath";
-    public static XName RDIMASTER = "RdiMasterName";
-    public static XName TARGETFILEPATH = "TargetsFilePath";
-    public static XName TARGETFILENAME = "TargetsFileName";
-    public static XName TARGETXMLFILENAME = "TargetsXMLFileName";
+    public static readonly XName SAVEDIRBASE = "SaveDirectoryBasePath";
+    public static readonly XName OPTIONS = "Options";
+    public static readonly XName EXECUTABLE_PATH = "ExecutablePath";
+    public static readonly XName EXECUTABLE_NAME = "ExecutableName";
+    public static readonly XName CLASS = "Class";
+    public static readonly XName CLASSNAME = "ClassName";
+    public static readonly XName HOST_NAME = "ComputerName";
+    public static readonly XName HOST = "Host";
+    public static readonly XName HOST_ADDRESS = "Address";
+    public static readonly XName ENABLED = "Enabled";
+    public static readonly XName CLASSES = "Classes";
+    public static readonly XName DEBUG = "Debug";
+    public static readonly XName USER = "User";
+    public static readonly XName LOGGING = "Logging";
+    public static readonly XName WHATIF = "Whatif";
+    public static readonly XName LOGFILE = "Logfile";
+    public static readonly XName LOGPATH = "Logpath";
+    public static readonly XName SAVEDIR = "Savedir";
+    public static readonly XName RDIMASTERPATH = "RdiMasterPath";
+    public static readonly XName RDIMASTER = "RdiMasterName";
+    public static readonly XName TARGETFILEPATH = "TargetsFilePath";
+    public static readonly XName TARGETFILENAME = "TargetsFileName";
+    public static readonly XName TARGETXMLFILENAME = "TargetsXMLFileName";
 
     // Valid program arguments
-    public static string[] VALID_ARGUMENTS = {
+    public static readonly string[] VALID_ARGUMENTS = {
         WORKSTATION, OTHER,TEST, SERVER
     };
 

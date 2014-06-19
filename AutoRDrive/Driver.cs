@@ -9,7 +9,7 @@ namespace AutoBack
 {
 
 /// <summary>
-/// Primary driver class for this program. This class facilitates the running 
+/// Primary driver class for this program. This class facilitates the running                               
 /// logic of the program.
 /// </summary>
 /// <remarks>
@@ -110,7 +110,7 @@ public class Driver
             return XDocument.Load(file);
         } catch (Exception e) {
             Lib.log(Constants.ERROR_FILE_PARSE + file + " " + e);
-            throw e;
+            throw;
         }
     }
 
