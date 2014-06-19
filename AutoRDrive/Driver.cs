@@ -53,7 +53,6 @@ public class Driver
                 + ", NO_EXECUTE: " 
                 + NO_EXECUTE
             );
-            
             string outString = null;
             foreach (string host in classesToTarget)
                 outString += host + " ";
@@ -62,13 +61,7 @@ public class Driver
             parseTargetFile();
             parseTargetFileXLS();
         } catch(Exception e) {
-            string error = 
-                "FATAL ERROR: " 
-                + e.Message 
-                + " " 
-                + e.ToString();
-
-            Lib.log(Constants.LL_ERROR, error);
+            Lib.logException(e);
             System.Environment.Exit(Constants.EXIT_FAILURE);
         }
 

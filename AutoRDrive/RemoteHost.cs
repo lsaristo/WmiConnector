@@ -34,23 +34,12 @@ class RemoteHost
     public bool execute() {
         try {
             if (!Enabled && !Driver.NO_EXECUTE) { return false; }
-            if (!testConnection() || !Enabled) { return false; }
+            if (!preConnect() || !Enabled) { return false; }
             makeSaveDirectory();
             generateRdi();
-            Scope = new ManagementScope("\\\\" + HostAddress + Constants.WMI_ROOT);
-            Scope.Connect();
-            ManagementPath mp = new ManagementPath(Constants.CONNECTION_CLASS);
-            ConnectionClass = new ManagementClass(Scope, mp, null);
-            ProgramArgs = ConnectionClass.GetMethodParameters(Constants.METHOD);
-            ProgramArgs["CommandLine"] = ArgsSetter;
             ConnectionClass.InvokeMethod(Constants.METHOD, ProgramArgs, null);
         } catch (Exception e) {
-            Lib.log(
-                Constants.LL_ERROR
-                , HostName + " " 
-                + e.Message + " " 
-                + (e.InnerException != null ? e.InnerException.Message : "")
-            );
+            Lib.logException(e, HostName);
             return false;
         }
         Lib.log(Constants.LL_INFO, Constants.LOG_SUCCESS + " " + HostName);
@@ -62,7 +51,7 @@ class RemoteHost
     /// only attempts to establish a WMI connection to the RemoteHost and does not
     /// actually execute any commands.
     /// </summary>
-    public bool testConnection() {
+    public bool preConnect() {
         try {
             if(HostName.Equals("")) {
                 Lib.log(
@@ -106,7 +95,9 @@ class RemoteHost
             ManagementPath mp = new ManagementPath(Constants.CONNECTION_CLASS);
             ConnectionClass = new ManagementClass(Scope, mp, null);
             ProgramArgs = ConnectionClass.GetMethodParameters(Constants.METHOD);
-            ConnectionClass.InvokeMethod(Constants.METHOD, ProgramArgs, null);
+            var ProgramArgs_Dummy = ConnectionClass.GetMethodParameters(Constants.METHOD);
+            ProgramArgs["CommandLine"] = ArgsSetter;
+            ConnectionClass.InvokeMethod(Constants.METHOD, ProgramArgs_Dummy, null);
         } catch (Exception e) {
             Lib.log(Constants.LL_ERROR, Constants.TEST_FAIL + " " + HostName + ": " + e.Message);
             return false;

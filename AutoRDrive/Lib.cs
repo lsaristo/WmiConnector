@@ -72,6 +72,23 @@ namespace AutoBack
         }
 
         /// <summary>
+        /// Write an exception to the log. 
+        /// </summary>
+        /// <param name="e"></param>
+        public static void logException(Exception e, string hostIdentifier = null) {
+            string error = 
+                "Caught exception: "
+                + (hostIdentifier != null 
+                    ? hostIdentifier
+                    : " ")
+                + e.Message + " "
+                + (e.InnerException != null 
+                    ? e.InnerException.Message
+                    : "");
+            log(Constants.LL_ERROR, error);
+        }
+
+        /// <summary>
         /// Assert that a condition holds. Used for debugging. 
         /// </summary>
         /// <remarks>This method does nothing if Driver.DEBUG is false.
