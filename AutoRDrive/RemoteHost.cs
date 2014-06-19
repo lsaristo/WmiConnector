@@ -47,48 +47,35 @@ class RemoteHost
     }
 
     /// <summary>
-    /// Test connection to the RemoteHost. This method is similar to execute() but
-    /// only attempts to establish a WMI connection to the RemoteHost and does not
-    /// actually execute any commands.
+    /// Test connection to the RemoteHost. This method is similar to execute()
+    /// but only attempts to establish a WMI connection to the RemoteHost and
+    /// does not actually execute any commands.
     /// </summary>
     public bool preConnect() {
         try {
             if(HostName.Equals("")) {
-                Lib.log(
-                    Constants.LL_WARNING
-                    , HostAddress 
-                    + " has an empty hostname, skipping"
-                );
+                Lib.log(msg: HostAddress + " has an empty hostname, skipping");
                 return false;
             }
-
             HostAddress = Dns.GetHostEntry(HostName).AddressList[0].ToString();
             Lib.debug("Resolved " + HostName + " to " + HostAddress);
         } catch (Exception e) {
             Lib.log(
                 Constants.LL_WARNING
-                , "Couldn't resolve host " 
-                + HostName 
-                + " falling back to " 
-                + HostAddress
-                + " DNS Server reported: "
-                + e.Message
+                , "Couldn't resolve host " + HostName 
+                + " falling back to " + HostAddress
+                + " DNS Server reported: " + e.Message
             );
         }
-
         bool pingSuccess = (new Ping()).Send(HostAddress).Status == IPStatus.Success; 
-        
         if(!pingSuccess) {
             Lib.log(
                 Constants.LL_WARNING
-                , Constants.TEST_FAIL + " "
-                + HostName
-                + " (" + HostAddress + ") "
+                + HostName + " (" + HostAddress + ") "
                 + "Didn't respond to ICMP Echo Request"
             );
             return false;
         }
-
         try {
             Scope = new ManagementScope("\\\\" + HostAddress + Constants.WMI_ROOT);
             Scope.Connect();
@@ -99,10 +86,10 @@ class RemoteHost
             ProgramArgs["CommandLine"] = ArgsSetter;
             ConnectionClass.InvokeMethod(Constants.METHOD, ProgramArgs_Dummy, null);
         } catch (Exception e) {
-            Lib.log(Constants.LL_ERROR, Constants.TEST_FAIL + " " + HostName + ": " + e.Message);
+            Lib.logException(e, Constants.TEST_FAIL + " " + HostName);
             return false;
         }
-        Lib.log(Constants.LL_INFO, "WMI Connection Established: " + " " + HostName);
+        Lib.log(msg: "WMI Connection Established: " + " " + HostName);
         return true;
     }
 
@@ -115,16 +102,12 @@ class RemoteHost
     /// </remarks>
     public void generateRdi() {
         string fileText = File.ReadAllText(
-            Driver.getConfigOption(Constants.RDIMASTERPATH) 
-            + "\\" 
+            Driver.getConfigOption(Constants.RDIMASTERPATH) + "\\" 
             + Driver.getConfigOption(Constants.RDIMASTER)
         );
         string outputFile = 
-            SaveDir 
-            + "\\" 
-            + HostName 
-            + "_" 
-            + DateTime.Now.ToString("yyyy_MM-dd");
+            SaveDir + "\\" 
+            + HostName + "_" + DateTime.Now.ToString("yyyy_MM-dd");
         File.WriteAllText(RdiFile, fileText.Replace(Constants.PLACEHOLDER, outputFile));
     }
 
@@ -138,15 +121,11 @@ class RemoteHost
     /// </remarks>
     private void makeSaveDirectory() {
         SaveDir =
-            SaveDir
-            + "\\"
-            + HostName
-            + " - "
-            + (PrimaryUser == "" ? HostClass : PrimaryUser);
+            SaveDir + "\\"
+            + HostName + " - " + (PrimaryUser == "" ? HostClass : PrimaryUser);
 
         if (!System.IO.Directory.Exists(SaveDir))
             System.IO.Directory.CreateDirectory(SaveDir);
     }
-
 } // End of RemoteHost class. 
 } // End of namespace

@@ -45,28 +45,24 @@ public class Driver
             parseProgramArgs(args);
             parseConfigOptions();
 
-            Lib.debug( 
-                "Program Flags: Debug: " 
-                + DEBUG 
-                + ", Log: " 
-                + LOG 
-                + ", NO_EXECUTE: " 
-                + NO_EXECUTE
-            );
-            string outString = null;
+            string outString = 
+                "Program Flags: Debug: " + DEBUG 
+                + ", Log: " + LOG 
+                + ", NO_EXECUTE: " + NO_EXECUTE
+            
+            Lib.debug(outString);
+            outString = "";
             foreach (string host in classesToTarget)
                 outString += host + " ";
 
-            Lib.log(Constants.LL_INFO, "Targeting class(s): " + outString);
+            Lib.log(msg: "Targeting class(s): " + outString);
             parseTargetFile();
             parseTargetFileXLS();
         } catch(Exception e) {
             Lib.logException(e);
             System.Environment.Exit(Constants.EXIT_FAILURE);
         }
-
         runMainLoop();
-        Lib.debug("Finished execution");
         System.Environment.Exit(Constants.EXIT_SUCCESS);
     }
 
@@ -75,12 +71,7 @@ public class Driver
     /// </summary>
     private static void runMainLoop() {
         foreach (RemoteHost host in remoteHostList) {
-            Lib.debug(
-                "Calling " 
-                + host.HostName 
-                + " at " 
-                + host.HostAddress
-            );
+            Lib.debug("Trying " + host.HostName);
             host.execute();
         }
     }
@@ -90,7 +81,9 @@ public class Driver
     /// Print a help message to the Console. 
     /// </summary>
     private static void printHelp() {
-        string helpString = "Usage: AutoRDrive.exe [class1] [class2] ..." + Environment.NewLine;        
+        string helpString = 
+            "Usage: AutoRDrive.exe [class1] [class2] ..." 
+            + Environment.NewLine;        
         Console.WriteLine(helpString);
     }
 
@@ -101,12 +94,10 @@ public class Driver
     private static void printWelcome() {
         string welcomeString = 
             Environment.NewLine
-            + "###############################"
-            + Environment.NewLine
-            + "AutoRDrive has started"
-            + Environment.NewLine
+            + "###############################" + Environment.NewLine
+            + "AutoRDrive has started" + Environment.NewLine
             + "###############################";
-        Lib.log(Constants.LL_INFO, welcomeString);
+        Lib.log(msg: welcomeString);
     }
 
     /// <summary>
@@ -118,7 +109,7 @@ public class Driver
         try {
             return XDocument.Load(file);
         } catch (Exception e) {
-            Lib.log(Constants.LL_ERROR, Constants.ERROR_FILE_PARSE + file + " " + e);
+            Lib.log(msg: Constants.ERROR_FILE_PARSE + file + " " + e);
             throw e;
         }
     }
@@ -164,8 +155,7 @@ public class Driver
         LOG = cond(Constants.LOGGING);
         NO_EXECUTE = cond(Constants.WHATIF);
         targetXML = readFileToXML(
-            getConfigOption(Constants.TARGETFILEPATH) 
-            + "\\"
+            getConfigOption(Constants.TARGETFILEPATH) + "\\"
             + getConfigOption(Constants.TARGETXMLFILENAME)
         );
 
@@ -204,25 +194,13 @@ public class Driver
                         ,HostName = dr["Net Name"].ToString().ToUpper()
                         ,HostClass = dr["class"].ToString()
                         ,PrimaryUser = dr["Primary User"].ToString()
-                        ,SaveDir = 
-                            getConfigOption(Constants.SAVEDIRBASE) 
-                            + "\\" 
-                            + dr["class"]
+                        ,Enabled = dr["BU Enable"].ToString().ToLower().Equals(Constants.YES)
+                        ,SaveDir = getConfigOption(Constants.SAVEDIRBASE) + "\\" + dr["class"]
                         ,ArgsSetter = 
-                            getConfigOption(Constants.EXECUTABLE_PATH) 
-                            + "\\" 
+                            getConfigOption(Constants.EXECUTABLE_PATH) + "\\" 
                             + getConfigOption(Constants.EXECUTABLE_NAME)
-                        ,Enabled = 
-                            NO_EXECUTE 
-                            ? false 
-                            : dr["BU Enable"]
-                                .ToString()
-                                .ToLower()
-                                .Equals(Constants.YES)
                         ,RdiFile = getConfigOption(Constants.RDIMASTERPATH) 
-                            + "\\custom\\" 
-                            + dr["Net Name"].ToString() 
-                            + ".rdi"
+                            + "\\custom\\" + dr["Net Name"].ToString() + ".rdi"
                     }
                 );
             }
@@ -243,7 +221,9 @@ public class Driver
         IEnumerable<XElement> typeList = 
             targetXML.Descendants(Constants.CLASSES).Elements();
         Func<XElement, bool> condition =
-            x => classesToTarget.Contains<string>(x.Element(Constants.CLASSNAME).Value.ToLower());
+            x => classesToTarget.Contains<string>(
+                x.Element(Constants.CLASSNAME).Value.ToLower()
+            );
 
         foreach (XElement classTypes in typeList) {
             if (condition(classTypes)) {
@@ -256,18 +236,15 @@ public class Driver
                             ,SaveDir = classTypes.Element(Constants.SAVEDIR).Value
                             ,HostClass = classTypes.Element(Constants.CLASSNAME).Value
                             ,ArgsSetter = 
-                                getConfigOption(Constants.EXECUTABLE_PATH)
-                                + "\\" 
+                                getConfigOption(Constants.EXECUTABLE_PATH) + "\\" 
                                 + getConfigOption(Constants.EXECUTABLE_NAME)
                             ,Enabled = 
-                                    param.Element(Constants.ENABLED)
-                                    .Value
-                                    .Equals(Constants.TRUE)
+                                param.Element(Constants.ENABLED)
+                                .Value
+                                .Equals(Constants.TRUE)
                             ,RdiFile = 
-                                getConfigOption(Constants.RDIMASTERPATH) 
-                                + "\\custom\\" 
-                                + param.Element(Constants.HOST_NAME).Value 
-                                + ".rdi"
+                                getConfigOption(Constants.RDIMASTERPATH) + "\\custom\\" 
+                                + param.Element(Constants.HOST_NAME).Value + ".rdi"
                         }
                     );
                 }
