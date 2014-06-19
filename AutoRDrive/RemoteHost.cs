@@ -33,6 +33,7 @@ class RemoteHost
     /// </summary>
     public bool execute() {
         try {
+            if (!testConnection() || !Enabled) { return false; }
             makeSaveDirectory();
             generateRdi();
             Scope = new ManagementScope("\\\\" + HostAddress + Constants.WMI_ROOT);
@@ -43,7 +44,12 @@ class RemoteHost
             ProgramArgs["CommandLine"] = ArgsSetter;
             ConnectionClass.InvokeMethod(Constants.METHOD, ProgramArgs, null);
         } catch (Exception e) {
-            Lib.log(Constants.LL_ERROR, HostName + ": " + e.Message);
+            Lib.log(
+                Constants.LL_ERROR
+                , HostName + " " 
+                + e.Message + " " 
+                + (e.InnerException != null ? e.InnerException.Message : "")
+            );
             return false;
         }
         Lib.log(Constants.LL_INFO, Constants.LOG_SUCCESS + " " + HostName);
@@ -55,17 +61,42 @@ class RemoteHost
     /// only attempts to establish a WMI connection to the RemoteHost and does not
     /// actually execute any commands.
     /// </summary>
-    public void testConnection() {
-        boolean pingSuccess = (new Ping()).Send(HostAddress) == IPStatus.Sucess; 
+    public bool testConnection() {
+        try {
+            if(HostName.Equals("")) {
+                Lib.log(
+                    Constants.LL_WARNING
+                    , HostAddress 
+                    + " has an empty hostname, skipping"
+                );
+                return false;
+            }
+
+            HostAddress = Dns.GetHostEntry(HostName).AddressList[0].ToString();
+            Lib.debug("Resolved " + HostName + " to " + HostAddress);
+        } catch (Exception e) {
+            Lib.log(
+                Constants.LL_WARNING
+                , "Couldn't resolve host " 
+                + HostName 
+                + " falling back to " 
+                + HostAddress
+                + " DNS Server reported: "
+                + e.Message
+            );
+        }
+
+        bool pingSuccess = (new Ping()).Send(HostAddress).Status == IPStatus.Success; 
         
         if(!pingSuccess) {
             Lib.log(
-                Constants.LL_WARN 
-                , Constants.TEST_FAIL
+                Constants.LL_WARNING
+                , Constants.TEST_FAIL + " "
                 + HostName
-                + " Didn't respond to ICMP Echo Request"
+                + " (" + HostAddress + ") "
+                + "Didn't respond to ICMP Echo Request"
             );
-            return;
+            return false;
         }
 
         try {
@@ -77,9 +108,10 @@ class RemoteHost
             ConnectionClass.InvokeMethod(Constants.METHOD, ProgramArgs, null);
         } catch (Exception e) {
             Lib.log(Constants.LL_ERROR, Constants.TEST_FAIL + " " + HostName + ": " + e.Message);
-            return;
+            return false;
         }
-        Lib.log(Constants.LL_INFO, Constants.TEST_SUCCESS + " " + HostName);
+        Lib.log(Constants.LL_INFO, "WMI Connection Established: " + " " + HostName);
+        return true;
     }
 
     /// <summary>

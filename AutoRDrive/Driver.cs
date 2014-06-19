@@ -37,7 +37,7 @@ public class Driver
     /// </param>
     public static void Main(string[] args) {
         try {
-            if(args.length == 0) {
+            if(args.Length == 0) {
                 printHelp();
                 Environment.Exit(Constants.EXIT_FAILURE);
             }
@@ -51,7 +51,7 @@ public class Driver
                 + ", Log: " 
                 + LOG 
                 + ", NO_EXECUTE: " 
-                + NO_EXECUTE;
+                + NO_EXECUTE
             );
             
             string outString = null;
@@ -66,7 +66,7 @@ public class Driver
                 "FATAL ERROR: " 
                 + e.Message 
                 + " " 
-                + e.ToString());
+                + e.ToString();
 
             Lib.log(Constants.LL_ERROR, error);
             System.Environment.Exit(Constants.EXIT_FAILURE);
@@ -88,13 +88,9 @@ public class Driver
                 + " at " 
                 + host.HostAddress
             );
-
-            if (host.Enabled) {
-                host.execute();
-            } else {
-                Lib.debug(host.HostName + " is disabled");
-                host.testConnection();
-            }
+            if (!host.Enabled)
+                Lib.log(Constants.LL_INFO, host.HostName + " is disabled. Testing only");
+            host.execute();
         }
     }
 

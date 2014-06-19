@@ -27,13 +27,17 @@ namespace AutoBack
         /// <see cref="config.xml"/>
         public static void log(string level, string message) {
             if (Driver.LOG) {
+                string fullLogPath = null;
+                string fallbackLog = null;
+                string logString = null;
+
                 try {
-                    logFile = Driver.getConfigOption(Constants.LOGFILE)
-                    logPath = Driver.getConfigOption(Constants.LOGPATH)
-                    string fullLogPath = logPath + "\\" + logFile;
-                    string fallbackLog = 
+                    logFile = Driver.getConfigOption(Constants.LOGFILE);
+                    logPath = Driver.getConfigOption(Constants.LOGPATH);
+                    fullLogPath = logPath + "\\" + logFile;
+                    fallbackLog = 
                         Environment.CurrentDirectory + Constants.FALLBACK_LOG;
-                    string logString = 
+                    logString = 
                         DateTime.Now.ToString() 
                         + ": " 
                         + message 
