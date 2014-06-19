@@ -158,10 +158,6 @@ public class Driver
             getConfigOption(Constants.TARGETFILEPATH) + "\\"
             + getConfigOption(Constants.TARGETXMLFILENAME)
         );
-
-        Lib.assertTrue(DEBUG != null, Constants.ERROR_CONFIG);
-        Lib.assertTrue(LOG != null, Constants.ERROR_CONFIG);
-        Lib.assertTrue(NO_EXECUTE != null, Constants.ERROR_CONFIG);
     }
 
     /// <summary>

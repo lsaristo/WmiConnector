@@ -46,7 +46,7 @@ static class Lib
             }
         } catch (Exception e) {
             using (StreamWriter w = File.AppendText(fallbackLog)) {
-                w.Write(logString);
+                w.Write(logString + " " + e);
             }
         }
     }

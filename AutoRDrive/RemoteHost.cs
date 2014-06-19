@@ -70,7 +70,7 @@ class RemoteHost
         bool pingSuccess = (new Ping()).Send(HostAddress).Status == IPStatus.Success; 
         if(!pingSuccess) {
             Lib.log(
-                + HostName + " (" + HostAddress + ") "
+                HostName + " (" + HostAddress + ") "
                 + "Didn't respond to ICMP Echo Request"
                 , Constants.LL_WARNING
             );

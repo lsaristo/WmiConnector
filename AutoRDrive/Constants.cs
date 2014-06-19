@@ -5,7 +5,7 @@ namespace AutoBack
 /// <summary>
 /// Global program constants and configuration parameters.
 /// </summary>
-const class Constants 
+static class Constants 
 {
     // Configuration parameters
     public const string CONFIG_FILE = @"\\backups\computerimagingprimary\resources\bin\config.xml";
@@ -31,32 +31,32 @@ const class Constants
     public const string QUERY = @"Select * from [Sheet1$A2:L]";
 
     // XName elements. These are used for XML parsing and must match XML tags. 
-    public const XName SAVEDIRBASE = "SaveDirectoryBasePath";
-    public const XName OPTIONS = "Options";
-    public const XName EXECUTABLE_PATH = "ExecutablePath";
-    public const XName EXECUTABLE_NAME = "ExecutableName";
-    public const XName CLASS = "Class";
-    public const XName CLASSNAME = "ClassName";
-    public const XName HOST_NAME = "ComputerName";
-    public const XName HOST = "Host";
-    public const XName HOST_ADDRESS = "Address";
-    public const XName ENABLED = "Enabled";
-    public const XName CLASSES = "Classes";
-    public const XName DEBUG = "Debug";
-    public const XName USER = "User";
-    public const XName LOGGING = "Logging";
-    public const XName WHATIF = "Whatif";
-    public const XName LOGFILE = "Logfile";
-    public const XName LOGPATH = "Logpath";
-    public const XName SAVEDIR = "Savedir";
-    public const XName RDIMASTERPATH = "RdiMasterPath";
-    public const XName RDIMASTER = "RdiMasterName";
-    public const XName TARGETFILEPATH = "TargetsFilePath";
-    public const XName TARGETFILENAME = "TargetsFileName";
-    public const XName TARGETXMLFILENAME = "TargetsXMLFileName";
+    public static XName SAVEDIRBASE = "SaveDirectoryBasePath";
+    public static XName OPTIONS = "Options";
+    public static XName EXECUTABLE_PATH = "ExecutablePath";
+    public static XName EXECUTABLE_NAME = "ExecutableName";
+    public static XName CLASS = "Class";
+    public static XName CLASSNAME = "ClassName";
+    public static XName HOST_NAME = "ComputerName";
+    public static XName HOST = "Host";
+    public static XName HOST_ADDRESS = "Address";
+    public static XName ENABLED = "Enabled";
+    public static XName CLASSES = "Classes";
+    public static XName DEBUG = "Debug";
+    public static XName USER = "User";
+    public static XName LOGGING = "Logging";
+    public static XName WHATIF = "Whatif";
+    public static XName LOGFILE = "Logfile";
+    public static XName LOGPATH = "Logpath";
+    public static XName SAVEDIR = "Savedir";
+    public static XName RDIMASTERPATH = "RdiMasterPath";
+    public static XName RDIMASTER = "RdiMasterName";
+    public static XName TARGETFILEPATH = "TargetsFilePath";
+    public static XName TARGETFILENAME = "TargetsFileName";
+    public static XName TARGETXMLFILENAME = "TargetsXMLFileName";
 
     // Valid program arguments
-    public const string[] VALID_ARGUMENTS = {
+    public static string[] VALID_ARGUMENTS = {
         WORKSTATION, OTHER,TEST, SERVER
     };
 
