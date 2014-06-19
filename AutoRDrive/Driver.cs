@@ -48,14 +48,14 @@ public class Driver
             string outString = 
                 "Program Flags: Debug: " + DEBUG 
                 + ", Log: " + LOG 
-                + ", NO_EXECUTE: " + NO_EXECUTE
+                + ", NO_EXECUTE: " + NO_EXECUTE;
             
             Lib.debug(outString);
             outString = "";
             foreach (string host in classesToTarget)
                 outString += host + " ";
 
-            Lib.log(msg: "Targeting class(s): " + outString);
+            Lib.log("Targeting class(s): " + outString);
             parseTargetFile();
             parseTargetFileXLS();
         } catch(Exception e) {
@@ -97,7 +97,7 @@ public class Driver
             + "###############################" + Environment.NewLine
             + "AutoRDrive has started" + Environment.NewLine
             + "###############################";
-        Lib.log(msg: welcomeString);
+        Lib.log(welcomeString);
     }
 
     /// <summary>
@@ -109,7 +109,7 @@ public class Driver
         try {
             return XDocument.Load(file);
         } catch (Exception e) {
-            Lib.log(msg: Constants.ERROR_FILE_PARSE + file + " " + e);
+            Lib.log(Constants.ERROR_FILE_PARSE + file + " " + e);
             throw e;
         }
     }
@@ -135,7 +135,7 @@ public class Driver
     private static void parseProgramArgs(string[] programArgs) {
         foreach(string arg in programArgs) {
             if(!Constants.VALID_ARGUMENTS.Contains<string>(arg.ToLower())) {
-                Lib.log(Constants.LL_ERROR, Constants.ERROR_ARGUMENTS);
+                Lib.log(Constants.ERROR_ARGUMENTS, Constants.LL_ERROR);
                 throw new Exception();
             }
             classesToTarget.Add(arg.ToLower());

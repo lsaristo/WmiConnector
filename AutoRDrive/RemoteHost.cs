@@ -42,7 +42,7 @@ class RemoteHost
             Lib.logException(e, HostName);
             return false;
         }
-        Lib.log(Constants.LL_INFO, Constants.LOG_SUCCESS + " " + HostName);
+        Lib.log(Constants.LOG_SUCCESS + " " + HostName);
         return true;
     }
 
@@ -54,25 +54,25 @@ class RemoteHost
     public bool preConnect() {
         try {
             if(HostName.Equals("")) {
-                Lib.log(msg: HostAddress + " has an empty hostname, skipping");
+                Lib.log(HostAddress + " has an empty hostname, skipping");
                 return false;
             }
             HostAddress = Dns.GetHostEntry(HostName).AddressList[0].ToString();
             Lib.debug("Resolved " + HostName + " to " + HostAddress);
         } catch (Exception e) {
             Lib.log(
-                Constants.LL_WARNING
-                , "Couldn't resolve host " + HostName 
+                "Couldn't resolve host " + HostName 
                 + " falling back to " + HostAddress
                 + " DNS Server reported: " + e.Message
+                , Constants.LL_WARNING
             );
         }
         bool pingSuccess = (new Ping()).Send(HostAddress).Status == IPStatus.Success; 
         if(!pingSuccess) {
             Lib.log(
-                Constants.LL_WARNING
                 + HostName + " (" + HostAddress + ") "
                 + "Didn't respond to ICMP Echo Request"
+                , Constants.LL_WARNING
             );
             return false;
         }
@@ -89,7 +89,7 @@ class RemoteHost
             Lib.logException(e, Constants.TEST_FAIL + " " + HostName);
             return false;
         }
-        Lib.log(msg: "WMI Connection Established: " + " " + HostName);
+        Lib.log("WMI Connection Established: " + " " + HostName);
         return true;
     }
 

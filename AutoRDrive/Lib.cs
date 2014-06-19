@@ -26,7 +26,7 @@ static class Lib
     /// <param name="msg">Message to log.</param>
     /// <see cref="Constants.cs"/> 
     /// <see cref="config.xml"/>
-    public static void log(string level = Constants.LL_INFO, string msg) {
+    public static void log(string msg, string level = Constants.LL_INFO) {
         if (!Driver.LOG) { return; }
 
         string fullLogPath = null;
