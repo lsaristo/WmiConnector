@@ -35,7 +35,8 @@ public class Driver
     /// <param name="args">Desired class to target. See Constants.cs for 
     /// supported arguments.
     /// </param>
-    public static void Main(string[] args) {
+    public static void Main(string[] args)
+	{
         try {
             if(args.Length == 0) {
                 printHelp();
@@ -69,7 +70,8 @@ public class Driver
     /// <summary>
     /// Iterate through the remoteHostList and execute() or test() each host.
     /// </summary>
-    private static void runMainLoop() {
+    private static void runMainLoop()
+	{
         foreach (RemoteHost host in remoteHostList) {
             Lib.debug("Trying " + host.HostName);
             host.execute();
@@ -80,7 +82,8 @@ public class Driver
     /// <summary>
     /// Print a help message to the Console. 
     /// </summary>
-    private static void printHelp() {
+    private static void printHelp()
+	{
         string helpString = 
             "Usage: AutoRDrive.exe [class1] [class2] ..." 
             + Environment.NewLine;        
@@ -91,7 +94,8 @@ public class Driver
     /// <summary>
     /// Print a welcome message to the log. 
     /// </summary>
-    private static void printWelcome() {
+    private static void printWelcome()
+	{
         string welcomeString = 
             Environment.NewLine
             + "###############################" + Environment.NewLine
@@ -105,7 +109,8 @@ public class Driver
     /// </summary>
     /// <param name="file">File to read.</param>
     /// <returns>XDocument representation of the file.</returns>
-    private static XDocument readFileToXML(string file) {
+    private static XDocument readFileToXML(string file)
+	{
         try {
             return XDocument.Load(file);
         } catch (Exception e) {
@@ -119,7 +124,8 @@ public class Driver
     /// </summary>
     /// <param name="param">Requested program option to be targeted.</param>
     /// <returns>String representation of param's value per config.xml</returns>
-    public static string getConfigOption(XName param) {
+    public static string getConfigOption(XName param)
+	{
         if (configXML == null)
             readFileToXML(Constants.CONFIG_FILE);
         foreach (XElement option in configXML.Descendants(Constants.OPTIONS))
@@ -132,7 +138,8 @@ public class Driver
     /// arguments. If any arguments provided are invalid, an Exception is 
     /// thrown and the program will exit with status EXIT_FAILURE. 
     /// </summary>
-    private static void parseProgramArgs(string[] programArgs) {
+    private static void parseProgramArgs(string[] programArgs)
+	{
         foreach(string arg in programArgs) {
             if(!Constants.VALID_ARGUMENTS.Contains<string>(arg.ToLower())) {
                 Lib.log(Constants.ERROR_ARGUMENTS, Constants.LL_ERROR);
@@ -147,7 +154,8 @@ public class Driver
     /// the required configuration parameters are missing from config.xml, an 
     /// Exception is thrown and thevprogram will exit with status EXIT_FAILURE.  
     /// </summary>
-    private static void parseConfigOptions() {
+    private static void parseConfigOptions()
+	{
         Func<XName, bool> cond = 
             x => getConfigOption(x).ToLower().Equals(Constants.TRUE);
 
@@ -170,7 +178,8 @@ public class Driver
     /// in cononical form (specifically, no leading zeros are supported) or the 
     /// targeting for the coorsponding host will fail. 
     /// </remarks>
-    private static void parseTargetFileXLS() {
+    private static void parseTargetFileXLS()
+	{
         OleDbConnection conn = new OleDbConnection(
             "Provider="
             + Constants.PROVIDER
@@ -213,7 +222,8 @@ public class Driver
     /// is "Other". The remaining classes listed are deprecated and will be 
     /// removed in future releases.
     /// </remarks>
-    private static void parseTargetFile() {
+    private static void parseTargetFile() 
+    {
         IEnumerable<XElement> typeList = 
             targetXML.Descendants(Constants.CLASSES).Elements();
         Func<XElement, bool> condition =

@@ -31,7 +31,8 @@ class RemoteHost
     /// If anything goes wrong during the process, the applicable exception
     /// is caught and we return false. 
     /// </summary>
-    public bool execute() {
+    public bool execute()
+	{
         try {
             if (!Enabled && !Driver.NO_EXECUTE) { return false; }
             if (!preConnect() || !Enabled) { return false; }
@@ -51,7 +52,8 @@ class RemoteHost
     /// but only attempts to establish a WMI connection to the RemoteHost and
     /// does not actually execute any commands.
     /// </summary>
-    public bool preConnect() {
+    public bool preConnect()
+	{
         try {
             if(HostName.Equals("")) {
                 Lib.log(HostAddress + " has an empty hostname, skipping");
@@ -100,7 +102,8 @@ class RemoteHost
     /// The save directory for the resultant RDI is given by the appropriate
     /// config parameters in config.xml.
     /// </remarks>
-    public void generateRdi() {
+    public void generateRdi()
+	{
         string fileText = File.ReadAllText(
             Driver.getConfigOption(Constants.RDIMASTERPATH) + "\\" 
             + Driver.getConfigOption(Constants.RDIMASTER)
@@ -119,7 +122,8 @@ class RemoteHost
     /// by the appropriate config parameters in config.xml concatenated with 
     /// the hostname and primary user of this RemoteHost.
     /// </remarks>
-    private void makeSaveDirectory() {
+    private void makeSaveDirectory() 
+    {
         SaveDir =
             SaveDir + "\\"
             + HostName + " - " + (PrimaryUser == "" ? HostClass : PrimaryUser);

@@ -26,7 +26,8 @@ static class Lib
     /// <param name="msg">Message to log.</param>
     /// <see cref="Constants.cs"/> 
     /// <see cref="config.xml"/>
-    public static void log(string msg, string level = Constants.LL_INFO) {
+    public static void log(string msg, string level = Constants.LL_INFO)
+	{
         if (!Driver.LOG) { return; }
 
         string fullLogPath = null;
@@ -58,7 +59,8 @@ static class Lib
     /// <remarks>This method does nothing if Driver.DEBUG is false.
     /// </remarks>
     /// <param name="message">Message to write.</param>
-    public static void debug(string message) {
+    public static void debug(string message)
+	{
         if (Driver.DEBUG) {
             log(msg: "[ DEBUG ]: " + message);
         }
@@ -68,7 +70,8 @@ static class Lib
     /// Write an exception to the log. 
     /// </summary>
     /// <param name="e"></param>
-    public static void logException(Exception e, string hostIdentifier = null) {
+    public static void logException(Exception e, string hostIdentifier = null)
+	{
         string error = 
             "Caught exception: "
             + (hostIdentifier != null ? hostIdentifier : " ")
@@ -85,7 +88,8 @@ static class Lib
     /// <param name="condition">Condition that must be true</param>
     /// <param name="msg">Error msg if condition is false to log.
     /// </param>
-    public static void assertTrue(bool cond, string msg = Constants.ERROR_ASSERT) {
+    public static void assertTrue(bool cond, string msg = Constants.ERROR_ASSERT) 
+    {
         if (Driver.DEBUG && !cond) {
             debug(msg + " " + cond);
             Environment.Exit(Constants.EXIT_FAILURE);
