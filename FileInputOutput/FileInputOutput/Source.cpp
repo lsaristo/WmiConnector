@@ -9,13 +9,13 @@ void writeFile(wchar_t*, wchar_t*);
 
 int __cdecl _tmain()
 {
-    TCHAR filename[] = _T("\\\\backups\\computerimagingprimary\\resources\\ImageCreation.log");
+    TCHAR filename[] = _T("\\\\backups.geomartin.local\\computerimagingprimary\\resources\\ImageCreation.log");
     TCHAR name[32767];
     DWORD nameSize = 32767;      
     DWORD bytesWritten;
     SYSTEMTIME time;
     TCHAR data[sizeof(TCHAR) * 1024] = _T("");
-    TCHAR result[] = _T("Result: FAILED!!\r\n");
+    TCHAR result[] = _T("Result: Success\r\n");
     GetSystemTime(&time);                            
     GetComputerName(&(*name), &nameSize);
     _stprintf_s(
