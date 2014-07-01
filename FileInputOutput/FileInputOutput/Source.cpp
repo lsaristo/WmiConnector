@@ -1,12 +1,12 @@
-// This file provides basic support to write to a log file located somwhere
-// on disk. 
 #include<Windows.h>
 #include<tchar.h>
 #include<stdio.h>
 #include<fstream>
 #include<iostream>
-void writeFile(wchar_t*, wchar_t*);
 
+/**
+ * Write log messages to the specified file using the Windows API.
+ */
 int __cdecl _tmain()
 {
     TCHAR filename[] = _T("\\\\backups.geomartin.local\\computerimagingprimary\\resources\\ImageCreation.log");
@@ -51,12 +51,4 @@ int __cdecl _tmain()
     wprintf(L"Wrote %d bytes, closing file and exiting\n", bytesWritten);
     CloseHandle(file);
     return EXIT_SUCCESS;
-}
-
-void writeFile(wchar_t* filename, wchar_t* message)
-{
-    std::wofstream file;
-    file.open(filename);
-    file << message;
-    file.close();
 }
