@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
 
@@ -28,26 +29,28 @@ static class Lib
     /// <see cref="config.xml"/>
     public static void log(string msg, string level = Constants.LL_INFO)
 	{
-        if (!Driver.LOG) { return; }
+        lock (Driver.logLock) {
+            if (!Driver.LOG) { return; }
 
-        string fullLogPath = null;
-        string fallbackLog = null;
-        string logString = null;
+            string fullLogPath = null;
+            string fallbackLog = null;
+            string logString = null;
 
-        try {
-            logFile = Driver.getConfigOption(Constants.LOGFILE);
-            logPath = Driver.getConfigOption(Constants.LOGPATH);
-            fullLogPath = logPath + "\\" + logFile;
-            fallbackLog = Environment.CurrentDirectory + Constants.FALLBACK_LOG;
-            logString = DateTime.Now.ToString() + ": " + msg + Environment.NewLine;
-            Console.WriteLine(logString);
+            try {
+                logFile = Driver.getConfigOption(Constants.LOGFILE);
+                logPath = Driver.getConfigOption(Constants.LOGPATH);
+                fullLogPath = logPath + "\\" + logFile;
+                fallbackLog = Environment.CurrentDirectory + Constants.FALLBACK_LOG;
+                logString = DateTime.Now.ToString() + ": " + msg + Environment.NewLine;
+                Console.WriteLine(logString);
 
-            using (StreamWriter w = File.AppendText(fullLogPath)) {
-                w.Write(logString);
-            }
-        } catch (Exception e) {
-            using (StreamWriter w = File.AppendText(fallbackLog)) {
-                w.Write(logString + " " + e);
+                using (StreamWriter w = File.AppendText(fullLogPath)) {
+                    w.Write(logString);
+                }
+            } catch (Exception e) {
+                using (StreamWriter w = File.AppendText(fallbackLog)) {
+                    w.Write(logString + " " + e);
+                }
             }
         }
     }

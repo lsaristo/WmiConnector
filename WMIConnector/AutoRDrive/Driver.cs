@@ -28,12 +28,11 @@ public class Driver
     public static bool LOG = true;
     public static bool DEBUG = true;
     public static bool NO_EXECUTE = false;
-    public static int count =
-        Convert.ToInt32(getConfigOption(Constants.CONCURRENT_LIMIT));
-    public static Semaphore runWaiter = new Semaphore(0, count);
+    public static int count;
     public static List<String> currentRunners = new List<String>();
     public static List<String> failedRunners = new List<String>();
-    public static Semaphore runnerPhore = new Semaphore(0, count);
+    public static Semaphore runnerPhore;
+    public static Object logLock = new Object();
     public static Object runnerLock = new Object();
 
     /// <summary>
@@ -81,8 +80,22 @@ public class Driver
 
         // Wait for the runnerThread to finish.
         runnerThread.Join();
+
+        // Wait for all hosts to report results.
+        while (currentRunners.Count > 0) {
+            String dbgMsg =
+                "Done executing against all hosts. Still waiting for "
+                + currentRunners.Count + " hosts to report success or fail";
+            Lib.debug(dbgMsg);
+            runnerPhore.WaitOne();
+        }
         resultServer.stop();
-        Lib.debug("Done running.");
+        Lib.debug("Trying to stop socket server...");
+        if (serverThread.Join(10000)) {
+            Lib.debug("Server shutdown. Leaving");
+        } else {
+            Lib.log("WARNING: Couldn't stop socket server and got tired of waiting");
+        }
       
         // Deal with the hosts that failed. 
         if(failedRunners.Count > 0) {
@@ -100,7 +113,7 @@ public class Driver
     private static void runMainLoop()
 	{
         foreach (RemoteHost host in remoteHostList) {
-            lock(runnerLock) { 
+            lock(runnerLock) {
                 runnerPhore.WaitOne();
                 currentRunners.Add(host.HostName);
             }
@@ -194,6 +207,8 @@ public class Driver
         DEBUG = cond(Constants.DEBUG);
         LOG = cond(Constants.LOGGING);
         NO_EXECUTE = cond(Constants.WHATIF);
+        count = Convert.ToInt32(getConfigOption(Constants.CONCURRENT_LIMIT));
+        runnerPhore = new Semaphore(count, count);
         targetXML = readFileToXML(
             getConfigOption(Constants.TARGETFILEPATH) + "\\"
             + getConfigOption(Constants.TARGETXMLFILENAME)

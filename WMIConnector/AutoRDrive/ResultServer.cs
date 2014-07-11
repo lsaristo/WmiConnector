@@ -43,14 +43,17 @@ class ResultServer
             listener.ReceiveTimeout = Constants.TIMEOUT;
 
             while(alive) {
-                try { 
+                try {
+                    Lib.debug("Waiting for connections to " + port);
                     Socket handler = listener.Accept();
+                    Lib.debug("Got connection, Handling");
 
                     while(true) {
                         bytes = new byte[bufferSize];
                         int bytesRec = handler.Receive(bytes);
                         inData += Encoding.ASCII.GetString(bytes,0,bytesRec);
-                        if(inData.IndexOf("<EOF>") > -1) { 
+                        if(inData.IndexOf("<EOF>") > -1) {
+                            Lib.debug("Got EOF, closing socket");
                             break; 
                         }
                     }
@@ -80,10 +83,12 @@ class ResultServer
                             Driver.runnerPhore.Release();
                         }
                     }
-                    if(responseResult.ToLower() != "success") {
-                        lock(Driver.runnerLock) {
+                    if (!responseResult.ToLower().Contains("success")) {
+                        lock (Driver.runnerLock) {
                             Driver.failedRunners.Add(responseHost);
                         }
+                    } else {
+                        Lib.log(responseHost + " reported successful backup");
                     }
                 } catch(Exception e) { 
                     Lib.debug(e.Message);
