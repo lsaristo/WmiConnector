@@ -33,6 +33,7 @@ static class Constants
     // XName elements. These are used for XML parsing and must match XML tags. 
     public static readonly XName SAVEDIRBASE = "SaveDirectoryBasePath";
     public static readonly XName HISTORY_COUNT = "KeepMaxCount";
+    public static readonly XName SERVER_PORT = "ServerListenPort";
     public static readonly XName OPTIONS = "Options";
     public static readonly XName EXECUTABLE_PATH = "ExecutablePath";
     public static readonly XName EXECUTABLE_NAME = "ExecutableName";
@@ -55,6 +56,7 @@ static class Constants
     public static readonly XName TARGETFILEPATH = "TargetsFilePath";
     public static readonly XName TARGETFILENAME = "TargetsFileName";
     public static readonly XName TARGETXMLFILENAME = "TargetsXMLFileName";
+    public static readonly XName CONCURRENT_LIMIT = "ConcurrentLimit";
 
     // Valid program arguments
     public static readonly string[] VALID_ARGUMENTS = {
@@ -77,5 +79,10 @@ static class Constants
     // Exit status
     public const int EXIT_FAILURE = -1;
     public const int EXIT_SUCCESS = 0;
+
+    // Network constants
+    public const int BACKLOG = 100;
+    public const int TIMEOUT = 100000; // 100 Seconds
+
 } // End Constants class
 } // End namespace

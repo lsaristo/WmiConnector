@@ -1,16 +1,23 @@
 #include<Windows.h>
 #include<tchar.h>
 #include<stdio.h>
+#include<WinSock.h>
 #include<fstream>
 #include<iostream>
 
+#define SERVERPORT 8172
+
+void messageCoordinator(TCHAR *message);
+
 /**
- * Write log messages to the specified file using the Windows API.
+ * Write log messages to the specified log file and send result
+ * via TCP sockets to the coordinating server using Windows API.
  */
 int __cdecl _tmain()
 {
     TCHAR filename[] = _T("\\\\backups.geomartin.local\\computerimagingprimary\\resources\\ImageCreation.log");
     TCHAR name[32767];
+    TCHAR netResult[32767];
     DWORD nameSize = 32767;      
     DWORD bytesWritten;
     SYSTEMTIME time;
@@ -31,6 +38,9 @@ int __cdecl _tmain()
     _tcscat_s(data, &(*name));
     _tcscat_s(data, _T(", "));
     _tcscat_s(data, result);
+    _tcscat_s(netResult, name);
+    _tcscat_s(netResult, _T(":"));
+    _tcscat_s(netResult, _T("SUCCESS"));
 
     HANDLE file = CreateFile(
         filename,
@@ -50,5 +60,19 @@ int __cdecl _tmain()
     WriteFile(file, data, _tcslen(data)*sizeof(TCHAR), &bytesWritten, NULL);    
     wprintf(L"Wrote %d bytes, closing file and exiting\n", bytesWritten);
     CloseHandle(file);
+
+    messageCoordinator(netResult);
     return EXIT_SUCCESS;
+}
+
+void messageCoordinator(TCHAR *message)
+{
+
+    int sock_desc = socket(
+        PF_INET, 
+        SOCK_STREAM, 
+        getprotobyname("tcp")->p_proto
+    );
+
+    // connect(sock_desc,)
 }

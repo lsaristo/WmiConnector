@@ -4,6 +4,7 @@ using System.Linq;
 using System.Xml.Linq;
 using System.Data;
 using System.Data.OleDb;
+using System.Threading;
 
 namespace AutoBack 
 {
@@ -27,6 +28,13 @@ public class Driver
     public static bool LOG = true;
     public static bool DEBUG = true;
     public static bool NO_EXECUTE = false;
+    public static int count =
+        Convert.ToInt32(getConfigOption(Constants.CONCURRENT_LIMIT));
+    public static Semaphore runWaiter = new Semaphore(0, count);
+    public static List<String> currentRunners = new List<String>();
+    public static List<String> failedRunners = new List<String>();
+    public static Semaphore runnerPhore = new Semaphore(0, count);
+    public static Object runnerLock = new Object();
 
     /// <summary>
     /// Main program entry point. Populate host list and execute commands
@@ -63,7 +71,26 @@ public class Driver
             Lib.logException(e);
             System.Environment.Exit(Constants.EXIT_FAILURE);
         }
-        runMainLoop();
+
+        // Set up threading. We're using 3 threads for this program. 
+        ResultServer resultServer = new ResultServer();
+        Thread runnerThread = new Thread(new ThreadStart(runMainLoop));
+        Thread serverThread = new Thread(new ThreadStart(resultServer.runServer));
+        serverThread.Start();
+        runnerThread.Start();
+
+        // Wait for the runnerThread to finish.
+        runnerThread.Join();
+        resultServer.stop();
+        Lib.debug("Done running.");
+      
+        // Deal with the hosts that failed. 
+        if(failedRunners.Count > 0) {
+            Lib.log("Warning: " + failedRunners.Count + " hosts reported failures");
+            // TODO: Maybe we do this, maybe we don't.
+        }
+        
+        // Report successful exit if we've made it this far without an error.
         System.Environment.Exit(Constants.EXIT_SUCCESS);
     }
 
@@ -73,7 +100,12 @@ public class Driver
     private static void runMainLoop()
 	{
         foreach (RemoteHost host in remoteHostList) {
+            lock(runnerLock) { 
+                runnerPhore.WaitOne();
+                currentRunners.Add(host.HostName);
+            }
             Lib.debug("Trying " + host.HostName);
+            Lib.debug("Queue size: ~" + currentRunners.Count);
             host.execute();
         }
     }
