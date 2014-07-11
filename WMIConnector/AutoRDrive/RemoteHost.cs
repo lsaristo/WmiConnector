@@ -3,6 +3,8 @@ using System.Management;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.IO;
+using System.Linq;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.OleDb;
 namespace AutoBack 
@@ -37,6 +39,7 @@ class RemoteHost
             if (!Enabled && !Driver.NO_EXECUTE) { return false; }
             if (!preConnect() || !Enabled) { return false; }
             makeSaveDirectory();
+            cleanSaveDirectory();
             generateRdi();
             ConnectionClass.InvokeMethod(Constants.METHOD, ProgramArgs, null);
         } catch (Exception e) {
@@ -115,7 +118,25 @@ class RemoteHost
     }
 
     /// <summary>
-    /// Create the destination directory if it doesn't already exist. 
+    /// Clean the destination directory of stale backups.
+    /// </summary>
+    private void cleanSaveDirectory() 
+    {
+        string[] files;
+        Comparison<String> comp = (x, y) => {
+            return File.GetCreationTime(x).CompareTo(File.GetCreationTime(y));
+        };
+        
+        while ((files = Directory.GetFiles(SaveDir).ToArray()).Length > 2) {
+            Array.Sort(files, comp);
+            String file = Enumerable.First<String>(files);
+            File.Delete(file);
+            Lib.log("Removed old file: " + file);
+        }
+    }
+
+    /// <summary>
+    /// Create the destination directory if it doesn't alrready exist. 
     /// </summary>
     /// <remarks>
     /// The destination directory is given by the base save directory as given
