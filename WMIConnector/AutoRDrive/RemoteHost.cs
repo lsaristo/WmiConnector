@@ -16,17 +16,19 @@ namespace AutoBack
 /// </summary>
 class RemoteHost 
 {
-    public bool Enabled { get; set; }
-    public string SaveDir { get; set; }
-    public string HostAddress { get; set; }
-    public string HostClass { get; set; }
-    public string HostName { get; set; }
-    public string PrimaryUser { get; set; }
+    public Boolean Enabled { get; set; }
+    public String SaveDir { get; set; }
+    public String HostAddress { get; set; }
+    public String HostClass { get; set; }
+    public String HostName { get; set; }
+    public String PrimaryUser { get; set; }
+    public String ArgsSetter { get; set; }
+    public String RdiFile { get; set; }
+    public Int32 HistoryCount { get; set; }
     public ManagementScope Scope { get; set; }
     public ManagementClass ConnectionClass { get; set; }
     public ManagementBaseObject ProgramArgs { get; set; }
-    public string ArgsSetter { get; set; }
-    public string RdiFile { get; set; }
+    
 
     /// <summary>
     /// Connect to the remote host and execute the command. See config.xml. 
@@ -39,6 +41,7 @@ class RemoteHost
             if (!Enabled && !Driver.NO_EXECUTE) { return false; }
             if (!preConnect() || !Enabled) { return false; }
             makeSaveDirectory();
+            consolodateSaveDirs();
             cleanSaveDirectory();
             generateRdi();
             ConnectionClass.InvokeMethod(Constants.METHOD, ProgramArgs, null);
@@ -126,12 +129,38 @@ class RemoteHost
         Comparison<String> comp = (x, y) => {
             return File.GetCreationTime(x).CompareTo(File.GetCreationTime(y));
         };
-        
-        while ((files = Directory.GetFiles(SaveDir).ToArray()).Length > 2) {
+
+        while ((files = Directory.GetFiles(SaveDir, "*.arc").ToArray()).Length > HistoryCount) {
             Array.Sort(files, comp);
             String file = Enumerable.First<String>(files);
             File.Delete(file);
-            Lib.log("Removed old file: " + file);
+            Lib.log("Too many backups for host (limit " + HistoryCount +"). Removing: " + file);
+        }
+    }
+
+    private void consolodateSaveDirs() {
+        String basePath = SaveDir.Substring(0, SaveDir.LastIndexOf("\\"));
+        var dirs =
+            from dir in Directory.GetDirectories(basePath, "*"+HostName+"*")
+            where dir != SaveDir
+            select dir;
+      
+        foreach (String dir in dirs) {
+            Lib.log("Found duplicate folder for hostname " + HostName);
+            foreach (String file in Directory.GetFiles(dir)) {
+                File.Move(file, SaveDir + "\\" + Path.GetFileName(file));
+                Lib.log("Moved " + file + " from duplicate folder to " + SaveDir);
+            }
+            foreach (String subdir in Directory.GetDirectories(dir)) {
+                Directory.Move(subdir, SaveDir+"\\"+Path.GetFileName(subdir));
+                Lib.log("Moved " + subdir + " from duplicate folder to " + SaveDir);
+            }
+            if (Directory.EnumerateFileSystemEntries(dir).ToArray().Length == 0) {
+                Directory.Delete(dir);
+                Lib.log("Removed duplicate directory " + dir);
+            } else {
+                Lib.log("ERROR: Duplicate directory not empty (but should be): " + dir);
+            }
         }
     }
 

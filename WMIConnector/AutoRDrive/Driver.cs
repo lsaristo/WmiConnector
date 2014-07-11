@@ -206,6 +206,7 @@ public class Driver
                             + getConfigOption(Constants.EXECUTABLE_NAME)
                         ,RdiFile = getConfigOption(Constants.RDIMASTERPATH) 
                             + "\\custom\\" + dr["Net Name"].ToString() + ".rdi"
+                        ,HistoryCount = Convert.ToInt32(getConfigOption(Constants.HISTORY_COUNT))
                     }
                 );
             }
@@ -251,6 +252,7 @@ public class Driver
                             ,RdiFile = 
                                 getConfigOption(Constants.RDIMASTERPATH) + "\\custom\\" 
                                 + param.Element(Constants.HOST_NAME).Value + ".rdi"
+                            ,HistoryCount = Convert.ToInt32(getConfigOption(Constants.HISTORY_COUNT))
                         }
                     );
                 }
