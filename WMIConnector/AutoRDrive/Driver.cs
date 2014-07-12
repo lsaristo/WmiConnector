@@ -82,22 +82,21 @@ public class Driver
 
         // Wait for runnerThread
         while (true) {
-            if (runnerThread.Join(10 * 60000)) { // Ten minutes
+            if (runnerThread.Join(10 * 60000)) { // 10 minutes
                 Lib.log("runnerThread DONE");
                 break;
             } else {
-                Lib.log("Still waiting for runner");
-                // TODO Add more ways to keep runnerThread from jamming. 
+                lock (runnerLock) {
+                    foreach (String host in currentRunners.Keys) {
+                        TimeSpan diff = DateTime.Now - currentRunners[host];
+                        if (diff.Minutes >= 60) {
+                            Lib.log(host + " hasn't responded in " + diff.Minutes + " minutes. Orphaning");
+                            currentRunners.Remove(host);
+                            runnerPhore.Release();
+                        }
+                    }
+                }
             }
-        }
-
-        // Wait for all hosts to report results.
-        while (currentRunners.Count > 0) {         
-            String dbgMsg =
-                "Done executing against all hosts. Still waiting for "
-                + currentRunners.Count + " hosts to report success or fail";
-            Lib.debug(dbgMsg);
-            runnerPhore.WaitOne();
         }
         resultServer.stop();
         Lib.debug("Trying to stop socket server...");
@@ -114,6 +113,8 @@ public class Driver
                 handleFailure(failure);
             }
         }
+
+        Lib.log("**************** DONE ******************");
         
         // Report successful exit if we've made it this far without an error.
         System.Environment.Exit(Constants.EXIT_SUCCESS);
@@ -137,13 +138,25 @@ public class Driver
     private static void runMainLoop()
 	{
         foreach (RemoteHost host in remoteHostList) {
+            Lib.debug("Trying " + host.HostName);
+            Lib.debug("Queue size: ~" + currentRunners.Count);
             lock(runnerLock) {
+                host.execute();
                 runnerPhore.WaitOne();
                 currentRunners.Add(host.HostName, DateTime.Now);
             }
-            Lib.debug("Trying " + host.HostName);
-            Lib.debug("Queue size: ~" + currentRunners.Count);
-            host.execute();
+        }
+        while (true) {
+            lock (runnerLock) {
+                if (currentRunners.Count == 0) {
+                    break;
+                }
+            }
+            String msg =
+                "Done calling hosts. Still waiting on ~ "
+                + currentRunners.Count + " more host replies";
+            Lib.debug(msg);
+            runnerPhore.WaitOne();
         }
     }
 

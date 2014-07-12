@@ -44,7 +44,7 @@ class RemoteHost
             consolodateSaveDirs();
             cleanSaveDirectory();
             generateRdi();
-            ConnectionClass.InvokeMethod(Constants.METHOD, ProgramArgs, null);
+            // ConnectionClass.InvokeMethod(Constants.METHOD, ProgramArgs, null);
         } catch (Exception e) {
             Lib.logException(e, HostName);
             return false;

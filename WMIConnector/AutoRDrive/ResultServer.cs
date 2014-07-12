@@ -51,7 +51,8 @@ class ResultServer
                     while(true) {
                         bytes = new byte[bufferSize];
                         int bytesRec = handler.Receive(bytes);
-                        inData += Encoding.ASCII.GetString(bytes,0,bytesRec);
+                        inData += Encoding.Unicode.GetString(bytes,0,bytesRec);
+                        Lib.log(inData);
                         if(inData.IndexOf("<EOF>") > -1) {
                             Lib.debug("Got EOF, closing socket");
                             break; 
@@ -68,20 +69,20 @@ class ResultServer
                     if (Driver.currentRunners.ContainsKey(responseHost)) {
                         String msg = 
                             responseHost + " reports " + responseResult
-                            + ". Removed from array of runners";
+                            + ". Removing from array of runners";
                         Lib.debug(msg);
                         lock(Driver.runnerLock) {
-                            Driver.currentRunners.Remove(responseHost);
-                            Driver.runnerPhore.Release();
+                            if (!Driver.currentRunners.Remove(responseHost)) {
+                                Lib.log("WARNING: {0} not found in runner list", responseHost);
                             }
+                            Driver.runnerPhore.Release();
+                        }
                     } else {
                         String msg = 
                             "Warning, " + responseHost + " reported " + responseResult
                             + ". This host is not present in the array of current"
                             + " runners. This should be dealt with.";
-                        lock(Driver.runnerLock) {
-                            Driver.runnerPhore.Release();
-                        }
+                        Lib.log(msg);
                     }
                     if (!responseResult.ToLower().Contains("success")) {
                         lock (Driver.runnerLock) {

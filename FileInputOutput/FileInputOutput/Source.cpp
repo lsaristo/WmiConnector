@@ -7,6 +7,7 @@
 
 #define SERVERPORT  8172
 #define SERVER_NAME "srvrdc01.geomartin.local"
+#define RESULT_STRING "FAILURE"
 #define FILE_PATH   "\\\\backups.geomartin.local\\computerimagingprimary\\resources\\ImageCreation.log"
 #pragma comment(lib, "ws2_32.lib")
 
@@ -21,15 +22,16 @@ int __cdecl _tmain()
     DWORD       nameSize = _MAX_PATH;      
     TCHAR       netResult[_MAX_PATH], 
                 name[_MAX_PATH],
+                result[_MAX_PATH],
                 data[_MAX_PATH];
     DWORD       bytesWritten;
     SYSTEMTIME  time;
-    TCHAR       result[]    =       _T("Result: Success\r\n");
     TCHAR       filename[]  =       _T(FILE_PATH); 
 
     GetSystemTime(&time); 
     GetComputerName(name, &nameSize);
-    _stprintf(netResult, _T("%s:%s"), name, _T("SUCCESS"));
+    _stprintf(result, _T("Result: %s\n\r"), _T(RESULT_STRING));
+    _stprintf(netResult, _T("%s:%s%s"), name, _T(RESULT_STRING), _T("<EOF>"));
     _stprintf(
         data, 
         _T("\n%2.2i-%2.2i-%4.4i5, %2.2i-%2.2i: Hostname: %s, %s"), 
@@ -61,24 +63,29 @@ int __cdecl _tmain()
  * Send a TCP message to the coordinator server to report backup stats.
  *
  * @param   message     To send to the coordinator.
- * @param   len         Length (num bytes) of the message.
+ * @param   len         Length (num chars) of the message.
  */
 void messageCoordinator(char *message, int len)
 {
     WSADATA     wsa;
     char*       server_ip;
+    int         sock_desc; 
     struct  sockaddr_in server;
     struct  hostent*    host;
-    int sock_desc = socket(
-        PF_INET, 
-        SOCK_STREAM, 
-        IPPROTO_TCP
-    );
-
-    WSAStartup(MAKEWORD(2,2),&wsa); // Must do this before gethostbyname()
+    
+    if (WSAStartup(MAKEWORD(2,2),&wsa) != 0) {
+        _tprintf(_T("ERROR: Couldn't init Winsock %i"), WSAGetLastError());
+        return;
+    }
+    
+    if ((sock_desc = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) == INVALID_SOCKET) {
+        _tprintf(_T("Error: Couldn't create socket: %d"), WSAGetLastError());
+        return;
+    }
 
     if((host = gethostbyname(SERVER_NAME)) == NULL) {
-        printf("Couldn't resolve hostname, Err: %i\n", WSAGetLastError());
+        _tprintf(_T("Couldn't resolve hostname, Err: %i\n"), WSAGetLastError());
+        return;
     }
 
     server_ip = inet_ntoa(*(struct in_addr *) *host->h_addr_list);
@@ -87,13 +94,15 @@ void messageCoordinator(char *message, int len)
     server.sin_addr.s_addr = inet_addr(server_ip);
     
     if(connect(sock_desc, (struct sockaddr *)&server, sizeof(server)) < 0) {
-        puts("Connection error\n");
+        _tprintf(_T("Connection error %i\n"), WSAGetLastError());
         return;
     }
 
     if(send(sock_desc, message, len*sizeof(TCHAR), 0) < 0) {
-        puts("Send failed\n");
+        _tprintf(_T("Send failed with %i\n"), WSAGetLastError());
         return;
     }
-   _tprintf(_T("%s sent"), message);
+   _tprintf(_T("Sent %d bytes %s"), len*sizeof(TCHAR), message);
+
+   shutdown(sock_desc, SD_SEND);
 }
