@@ -65,7 +65,7 @@ class ResultServer
                     String responseHost = responseArray[0];
                     String responseResult = responseArray[1];
 
-                    if (Driver.currentRunners.Contains(responseHost)) {
+                    if (Driver.currentRunners.ContainsKey(responseHost)) {
                         String msg = 
                             responseHost + " reports " + responseResult
                             + ". Removed from array of runners";

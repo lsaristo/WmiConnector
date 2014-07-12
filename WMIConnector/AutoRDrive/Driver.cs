@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using System.Xml.Linq;
 using System.Data;
 using System.Data.OleDb;
@@ -29,7 +30,8 @@ public class Driver
     public static bool DEBUG = true;
     public static bool NO_EXECUTE = false;
     public static int count;
-    public static List<String> currentRunners = new List<String>();
+    public static Dictionary<String, DateTime> currentRunners = 
+        new Dictionary<String, DateTime>();
     public static List<String> failedRunners = new List<String>();
     public static Semaphore runnerPhore;
     public static Object logLock = new Object();
@@ -78,11 +80,19 @@ public class Driver
         serverThread.Start();
         runnerThread.Start();
 
-        // Wait for the runnerThread to finish.
-        runnerThread.Join();
+        // Wait for runnerThread
+        while (true) {
+            if (runnerThread.Join(10 * 60000)) { // Ten minutes
+                Lib.log("runnerThread DONE");
+                break;
+            } else {
+                Lib.log("Still waiting for runner");
+                // TODO Add more ways to keep runnerThread from jamming. 
+            }
+        }
 
         // Wait for all hosts to report results.
-        while (currentRunners.Count > 0) {
+        while (currentRunners.Count > 0) {         
             String dbgMsg =
                 "Done executing against all hosts. Still waiting for "
                 + currentRunners.Count + " hosts to report success or fail";
@@ -100,11 +110,25 @@ public class Driver
         // Deal with the hosts that failed. 
         if(failedRunners.Count > 0) {
             Lib.log("Warning: " + failedRunners.Count + " hosts reported failures");
-            // TODO: Maybe we do this, maybe we don't.
+            foreach(String failure in failedRunners) {
+                handleFailure(failure);
+            }
         }
         
         // Report successful exit if we've made it this far without an error.
         System.Environment.Exit(Constants.EXIT_SUCCESS);
+    }
+
+    /// <summary>
+    /// Handle a failed backup node.
+    /// </summary>
+    private static void handleFailure(String failure) {
+        foreach (RemoteHost host in remoteHostList) {
+            if (host.HostName == failure && File.Exists(host.SaveDir)) {
+                File.Delete(host.SaveDir);
+                Lib.log("Erased failed backup {0}", host.SaveDir);
+            }
+        }
     }
 
     /// <summary>
@@ -115,7 +139,7 @@ public class Driver
         foreach (RemoteHost host in remoteHostList) {
             lock(runnerLock) {
                 runnerPhore.WaitOne();
-                currentRunners.Add(host.HostName);
+                currentRunners.Add(host.HostName, DateTime.Now);
             }
             Lib.debug("Trying " + host.HostName);
             Lib.debug("Queue size: ~" + currentRunners.Count);
@@ -285,7 +309,7 @@ public class Driver
                     remoteHostList.Add(
                         new RemoteHost {
                             HostAddress = param.Element(Constants.HOST_ADDRESS).Value
-                            ,HostName = param.Element(Constants.HOST_NAME).Value
+                            ,HostName = param.Element(Constants.HOST_NAME).Value.ToUpper()
                             ,PrimaryUser = param.Element(Constants.USER).Value
                             ,SaveDir = classTypes.Element(Constants.SAVEDIR).Value
                             ,HostClass = classTypes.Element(Constants.CLASSNAME).Value

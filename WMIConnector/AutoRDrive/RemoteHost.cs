@@ -54,6 +54,30 @@ class RemoteHost
     }
 
     /// <summary>
+    /// Query remote host and verify hostname is accurate. 
+    /// </summary>
+    private void verifyHostname() 
+    {
+        ObjectQuery query = 
+            new ObjectQuery("Select csname from Win32_OperatingSystem");
+        ManagementObjectSearcher searcher =
+            new ManagementObjectSearcher(Scope, query);
+        ManagementObjectCollection queryCol = searcher.Get();
+
+        foreach (var m in queryCol) {
+            if (m["csname"].ToString() != HostName) {
+                var oldName = HostName;
+                HostName = m["csname"].ToString();
+                String warn =
+                    "WARNING: Hostname per config: " + oldName 
+                    + " but WMI says " + HostName + ". Changing";
+                Lib.log(warn);
+            }
+            Console.WriteLine("Hostname reported via WMI as: {0}", m["csname"]);
+        }
+    }
+
+    /// <summary>
     /// Test connection to the RemoteHost. This method is similar to execute()
     /// but only attempts to establish a WMI connection to the RemoteHost and
     /// does not actually execute any commands.
@@ -93,6 +117,7 @@ class RemoteHost
             var ProgramArgs_Dummy = ConnectionClass.GetMethodParameters(Constants.METHOD);
             ProgramArgs["CommandLine"] = ArgsSetter;
             ConnectionClass.InvokeMethod(Constants.METHOD, ProgramArgs_Dummy, null);
+            verifyHostname();
         } catch (Exception e) {
             Lib.logException(e, Constants.TEST_FAIL + " " + HostName);
             return false;
