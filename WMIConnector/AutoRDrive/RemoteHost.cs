@@ -44,7 +44,7 @@ class RemoteHost
             consolodateSaveDirs();
             cleanSaveDirectory();
             generateRdi();
-            // ConnectionClass.InvokeMethod(Constants.METHOD, ProgramArgs, null);
+            ConnectionClass.InvokeMethod(Constants.METHOD, ProgramArgs, null);
         } catch (Exception e) {
             Lib.logException(e, HostName);
             return false;
@@ -72,8 +72,19 @@ class RemoteHost
                     "WARNING: Hostname per config: " + oldName 
                     + " but WMI says " + HostName + ". Changing";
                 Lib.log(warn);
+                lock (Driver.runnerLock) {
+                    if (Driver.currentRunners.ContainsKey(oldName)) {
+                        DateTime dt = Driver.currentRunners[oldName];
+                        Driver.currentRunners.Remove(oldName);
+                        Driver.currentRunners.Add(HostName, dt);
+                        Lib.debug("Changed currentRunner for " + oldName
+                            + "to " + HostName + " at "
+                            + Driver.currentRunners[HostName]);
+                    } else {
+                        Lib.log("WARNING: Couldn't find " + oldName + " in runners");
+                    }
+                }
             }
-            Console.WriteLine("Hostname reported via WMI as: {0}", m["csname"]);
         }
     }
 

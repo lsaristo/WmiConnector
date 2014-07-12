@@ -86,10 +86,11 @@ public class Driver
                 Lib.log("runnerThread DONE");
                 break;
             } else {
+                Lib.debug("Still waiting for runnerThread to finish");
                 lock (runnerLock) {
                     foreach (String host in currentRunners.Keys) {
                         TimeSpan diff = DateTime.Now - currentRunners[host];
-                        if (diff.Minutes >= 60) {
+                        if (diff.Minutes >= 100) {
                             Lib.log(host + " hasn't responded in " + diff.Minutes + " minutes. Orphaning");
                             currentRunners.Remove(host);
                             runnerPhore.Release();
@@ -100,7 +101,7 @@ public class Driver
         }
         resultServer.stop();
         Lib.debug("Trying to stop socket server...");
-        if (serverThread.Join(10000)) {
+        if (serverThread.Join(60000)) { // wait 1 minute
             Lib.debug("Server shutdown. Leaving");
         } else {
             Lib.log("WARNING: Couldn't stop socket server and got tired of waiting");
@@ -139,11 +140,25 @@ public class Driver
 	{
         foreach (RemoteHost host in remoteHostList) {
             Lib.debug("Trying " + host.HostName);
-            Lib.debug("Queue size: ~" + currentRunners.Count);
-            lock(runnerLock) {
-                host.execute();
-                runnerPhore.WaitOne();
+            String dbgString = "Hosts in queue: ";
+            foreach (String h in currentRunners.Keys) {
+                dbgString += h + " ";
+            }
+            Lib.debug(dbgString);
+            Lib.debug("Trying to add to queue and semaphore");
+            runnerPhore.WaitOne();
+            lock (runnerLock) {
                 currentRunners.Add(host.HostName, DateTime.Now);
+            }
+            Lib.debug("Executing " + host.HostName);
+            if (!host.execute()) {
+                Lib.debug("Removing " + host.HostName + " (reported failure) from queue");
+                if(currentRunners.ContainsKey(host.HostName)) {
+                    currentRunners.Remove(host.HostName);
+                } else {
+                    Lib.log("WARNING: "+host.HostName + " not in runner list.");
+                }
+                runnerPhore.Release();
             }
         }
         while (true) {

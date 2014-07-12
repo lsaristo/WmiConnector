@@ -12,7 +12,6 @@ namespace AutoBack
 
 class ResultServer 
 {
-    String inData;
     Int32 port;
     Int32 bufferSize = 1024;
     IPEndPoint localEndpoint;
@@ -44,6 +43,7 @@ class ResultServer
 
             while(alive) {
                 try {
+                    String inData = "";
                     Lib.debug("Waiting for connections to " + port);
                     Socket handler = listener.Accept();
                     Lib.debug("Got connection, Handling");
@@ -52,7 +52,6 @@ class ResultServer
                         bytes = new byte[bufferSize];
                         int bytesRec = handler.Receive(bytes);
                         inData += Encoding.Unicode.GetString(bytes,0,bytesRec);
-                        Lib.log(inData);
                         if(inData.IndexOf("<EOF>") > -1) {
                             Lib.debug("Got EOF, closing socket");
                             break; 

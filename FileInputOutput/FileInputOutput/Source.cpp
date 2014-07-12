@@ -34,7 +34,7 @@ int __cdecl _tmain()
     _stprintf(netResult, _T("%s:%s%s"), name, _T(RESULT_STRING), _T("<EOF>"));
     _stprintf(
         data, 
-        _T("\n%2.2i-%2.2i-%4.4i5, %2.2i-%2.2i: Hostname: %s, %s"), 
+        _T("\n%2.2i-%2.2i-%4.4i, %2.2i-%2.2i: Hostname: %s, %s"), 
         time.wMonth, time.wDay, time.wYear, time.wHour, time.wMinute,
         name, result
     );
