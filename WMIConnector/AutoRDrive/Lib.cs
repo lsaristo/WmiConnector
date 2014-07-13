@@ -28,7 +28,7 @@ static class Lib
     /// <see cref="Constants.cs"/> 
     /// <see cref="config.xml"/>
     public static void log(string msg, string host = null, string level = Constants.LL_INFO)
-	{
+    {
         lock (Driver.logLock) {
             if (!Driver.LOG) { return; }
 
@@ -63,7 +63,7 @@ static class Lib
     /// </remarks>
     /// <param name="message">Message to write.</param>
     public static void debug(string message, string host = null)
-	{
+    {
         if (Driver.DEBUG) {
             log(msg: "[ DEBUG ]: " + message);
         }
@@ -74,11 +74,11 @@ static class Lib
     /// </summary>
     /// <param name="e"></param>
     public static void logException(Exception e, string hostIdentifier = null)
-	{
+    {
         string error = 
-            "Caught exception: "
-            + (hostIdentifier != null ? hostIdentifier : " ")
-            + e.Message + " "
+            "Caught exception: " 
+            + (hostIdentifier != null ? hostIdentifier : " ") 
+            + e.Message + " " 
             + (e.InnerException != null ? e.InnerException.Message : "");
         log(Constants.LL_ERROR, error);
     }

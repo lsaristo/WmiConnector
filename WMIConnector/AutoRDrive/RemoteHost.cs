@@ -36,7 +36,7 @@ class RemoteHost
     /// is caught and we return false. 
     /// </summary>
     public bool execute()
-	{
+    {
         try {
             if (!Enabled && !Driver.NO_EXECUTE) { return false; }
             if (!preConnect() || !Enabled)      { return false; }
@@ -95,7 +95,7 @@ class RemoteHost
     /// </summary>
     /// <returns>True if success.</returns>
     public bool preConnect()
-	{
+    {
         //
         // GET IP for host.
         if(!resolveHost()) { return false; }
@@ -133,7 +133,8 @@ class RemoteHost
     {
         String log1 = HostAddress + " has an empty hostname, skipping";
         String log2 = "Resolved " + HostName + " to " + HostAddress;
-        String log3 = "Couldn't resolve host " + HostName + " falling back to " 
+        String log3 = 
+            "Couldn't resolve host " + HostName + " falling back to " 
             + HostAddress;
 
         try {
@@ -160,7 +161,7 @@ class RemoteHost
     /// config parameters in config.xml.
     /// </remarks>
     public void generateRdi()
-	{
+    {
         string fileText = File.ReadAllText(
             Driver.getConfigOption(Constants.RDIMASTERPATH) + "\\" 
             + Driver.getConfigOption(Constants.RDIMASTER));

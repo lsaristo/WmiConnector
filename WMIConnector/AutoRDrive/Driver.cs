@@ -30,7 +30,6 @@ public class Driver
     public static   Boolean             DEBUG;
     public static   Boolean             NO_EXECUTE;
     public static   List<String>        failedRunners; 
-    public static   List<String>        successRunners;
     public static   Object              logLock;
     public static   Object              runnerLock;
     public static   Semaphore           runnerPhore;
@@ -45,7 +44,7 @@ public class Driver
     /// supported arguments.
     /// </param>
     public static int Main(string[] args)
-	{
+    {
         //
         // Basic program setup
         if(!init())                 { return Constants.FATAL_INIT; }
@@ -97,17 +96,7 @@ public class Driver
                 break;
             } else {
                 Lib.debug(log2);
-                lock (runnerLock) {
-                    foreach (String host in currentRunners.Keys) {
-                        TimeSpan diff = DateTime.Now - currentRunners[host];
-                        if (diff.Minutes >= 100) {
-                            Lib.log(host + " hasn't responded in " 
-                                + diff.Minutes + " minutes. Orphaning");
-                            currentRunners.Remove(host);
-                            runnerPhore.Release();
-                        }
-                    }
-                }
+                purgeOld();
             }
         }
         resultServer.stop(); // TODO: This method doesn't seem to be working.
@@ -127,6 +116,24 @@ public class Driver
     }
 
     /// <summary>
+    /// Remote any stale hosts that haven't responded in awhile.
+    /// </summary>
+    private static void purgeOld()
+    {
+        lock (runnerLock) {
+            foreach (String host in currentRunners.Keys) {
+                TimeSpan diff = DateTime.Now - currentRunners[host];
+                if (diff.Minutes >= 100) {
+                    Lib.log(host + " hasn't responded in " 
+                        + diff.Minutes + " minutes. Orphaning");
+                    currentRunners.Remove(host);
+                    runnerPhore.Release();
+                }
+            }
+        }
+    }
+
+    /// <summary>
     /// Display the values of specific program arguments.
     /// </summary>
     /// <remarks>
@@ -136,12 +143,14 @@ public class Driver
     /// </remarks>
     private static void printProps()
     {
-        String outString = "Program Flags: Debug: " + DEBUG + ", Log: " + LOG 
+        String outString = 
+            "Program Flags: Debug: " + DEBUG + ", Log: " + LOG 
             + ", NO_EXECUTE: " + NO_EXECUTE;
         Lib.debug(outString);
         outString = "";        
-        foreach (String host in classesToTarget)
+        foreach (String host in classesToTarget) {
             outString += host + " ";
+        }
         Lib.log("Targeting class(s): " + outString);
     }
 
@@ -169,7 +178,6 @@ public class Driver
         DEBUG           = true;
         NO_EXECUTE      = false;
         failedRunners   = new List<String>();
-        successRunners  = new List<String>();
         logLock         = new Object();
         runnerLock      = new Object();
         currentRunners  = new Dictionary<String,DateTime>();
@@ -265,7 +273,7 @@ public class Driver
     /// Iterate through the remoteHostList and execute() or test() each host.
     /// </summary>
     private static void runMainLoop()
-	{
+    {
         foreach (RemoteHost host in remoteHostList) {
             String log1 = "Trying " + host.HostName;
             String log2 = "Trying to add to queue and semaphore";
@@ -309,7 +317,7 @@ public class Driver
     /// Print a help message to the Console. 
     /// </summary>
     private static void printHelp()
-	{
+    {
         Console.WriteLine(Constants.INFO_HELP);
     }
 
@@ -318,7 +326,7 @@ public class Driver
     /// Print a welcome message to the log. 
     /// </summary>
     private static void printWelcome()
-	{
+    {
         string welcomeString = 
             Environment.NewLine
             + "###############################" + Environment.NewLine
@@ -333,7 +341,7 @@ public class Driver
     /// <param name="file">File to read.</param>
     /// <returns>XDocument representation of the file.</returns>
     private static XDocument readFileToXML(string file)
-	{
+    {
         try {
             return XDocument.Load(file);
         } catch (Exception e) {
@@ -348,7 +356,7 @@ public class Driver
     /// <param name="param">Requested program option to be targeted.</param>
     /// <returns>String representation of param's value per config.xml</returns>
     public static string getConfigOption(XName param)
-	{
+    {
         if (configXML == null)
             readFileToXML(Constants.CONFIG_FILE);
         foreach (XElement option in configXML.Descendants(Constants.OPTIONS))
@@ -362,7 +370,7 @@ public class Driver
     /// thrown and the program will exit with status EXIT_FAILURE. 
     /// </summary>
     private static Boolean parseProgramArgs(string[] programArgs)
-	{
+    {
         if(programArgs.Length == 0) {
             printWelcome();
             return false;
@@ -389,7 +397,7 @@ public class Driver
     /// </summary>
     /// <returns>True if successful. False otherwise.</returns>
     private static Boolean parseConfigOptions()
-	{
+    {
         Func<XName, Boolean> cond = 
             x => getConfigOption(x).ToLower().Equals(Constants.TRUE);
 
@@ -400,7 +408,8 @@ public class Driver
             count = Convert.ToInt32(getConfigOption(Constants.CONCURRENT_LIMIT));
             targetXML = readFileToXML(
                 getConfigOption(Constants.TARGETFILEPATH) + "\\"
-                + getConfigOption(Constants.TARGETXMLFILENAME));
+                + getConfigOption(Constants.TARGETXMLFILENAME)
+            );
         } catch(Exception e) {
             Lib.log(Constants.ERROR_ARGUMENTS);
             Lib.logException(e);
@@ -421,7 +430,7 @@ public class Driver
     /// targeting for the coorsponding host will fail. 
     /// </remarks>
     private static void parseTargetFileXLS()
-	{
+    {
         String connString = 
             "Provider=" + Constants.PROVIDER + ";Data Source=" 
             + getConfigOption(Constants.TARGETFILEPATH) + "\\"

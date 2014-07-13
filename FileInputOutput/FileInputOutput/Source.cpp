@@ -5,11 +5,11 @@
 #include<WinSock2.h>
 #include<Windows.h>
 
-#define SERVERPORT  8172
-#define SERVER_NAME "srvrdc01.geomartin.local"
-#define RESULT_STRING "FAILURE"
-#define FILE_PATH   "\\\\backups.geomartin.local\\computerimagingprimary\\resources\\ImageCreation.log"
-#pragma comment(lib, "ws2_32.lib")
+#define SERVERPORT      8172
+#define SERVER_NAME     "srvrdc01.geomartin.local"
+#define RESULT_STRING   "FAILURE"
+#define FILE_PATH       "\\\\backups.geomartin.local\\computerimagingprimary\\resources\\ImageCreation.log"
+#pragma comment(lib,    "ws2_32.lib")
 
 void messageCoordinator(char *, int);
 

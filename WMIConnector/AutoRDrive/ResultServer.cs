@@ -16,7 +16,7 @@ namespace AutoBack
 /// </summary>
 class ResultServer 
 {   
-    public static      ManualResetEvent    reset;
+    public static       ManualResetEvent    reset;
     
     private Int32       port;
     private Int32       bufferSize;
