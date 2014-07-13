@@ -51,6 +51,7 @@ public class Driver
         //
         // Basic program setup
         if(!init())                 { return Constants.FATAL_INIT; }
+        if(!isLoaner())             { return Constants.FATAL_PCOUNT; }
         if(!parseProgramArgs(args)) { return Constants.FATAL_ARGS; }
         if(!parseConfigOptions())   { return Constants.FATAL_CONFIG; }
         printWelcome();
@@ -82,12 +83,20 @@ public class Driver
     /// </summary>
     private static Boolean isLoaner()
     {
+        String processes = "";
         String log1 = 
             "ERROR: Only one instance of this program may run "
             + "at a time. Another is already running.";
 
-        if(!getProcessByName(Constants.PROC_NAME).Length == 0) {
+        var currentCount = Process.GetProcesses().Where(x => x.ToString().Contains("AutoRDrive"));
+
+        if(currentCount.Count() > 1) {
             Lib.log(log1);
+
+            foreach (var proc in currentCount) {
+                processes += proc.ProcessName + " ";
+            }
+            Lib.debug("Process already found: " + processes);
             return false;
         }
         return true;
@@ -100,24 +109,24 @@ public class Driver
     private static Boolean runSentinel()
     {
         String  log1    = "Runner thread has finished";
-        String  log2    = "Still waiting for runnerThread to finish";
+        String  log2    = "Sentinel is waiting for runnerThread to finish";
         String  log3    = "Trying to stop socket server...";
         String  log4    = "Server shutdown. Leaving";
 
         ResultServer resultServer = new ResultServer();
-        runnerThread = new Thread(new ThreadStart(runMainLoop));
+        runnerThread = new Thread(new ThreadStart(runnerInit));
         serverThread = new Thread(new ThreadStart(resultServer.runServer));
         serverThread.Start();
 
-        if(!serverThread.isAlive && serverThread.Join(Constants.TS_TIMEOUT)) {
+        if(!serverThread.IsAlive && serverThread.Join(Constants.TS_TIMEOUT)) {
             Lib.log(Constants.ERROR_SERV_THREAD);
-            return Constants.FATAL_THREAD;
+            return false;
         } 
         runnerThread.Start();
 
         //
         // Wait for runnerThread
-        while (true) {
+        while (true) {  
             if (runnerThread.Join(Constants.RUNNER_TIME)) { 
                 Lib.debug(log1);
                 break;
@@ -143,6 +152,14 @@ public class Driver
     }
 
     /// <summary>
+    /// Run the Runner thread. 
+    /// </summary>
+    private static void runnerInit()
+    {
+        runMainLoop();
+    }
+
+    /// <summary>
     /// Remote any stale hosts that haven't responded in awhile.
     /// </summary>
     private static void purgeOld()
@@ -150,10 +167,11 @@ public class Driver
         lock (runnerLock) {
             foreach (String host in currentRunners.Keys) {
                 TimeSpan diff = DateTime.Now - currentRunners[host];
-                if (diff.Minutes >= 100) {
+                Lib.debug(host + " running for " + diff.TotalMinutes + " minutes so far.");
+                if (diff.TotalMinutes >= Constants.ORPHAN_TIMEOUT) {
                     String msg = 
-                        "WARNING: host + " hasn't responded in " 
-                        + diff.Minutes + " minutes. Orphaning";
+                        "WARNING: host hasn't responded in " 
+                        + diff.TotalMinutes + " minutes. Orphaning";
                     Lib.log(msg);
 
                     if(!currentRunners.Remove(host)) {
@@ -199,28 +217,27 @@ public class Driver
     private static bool init()
     {
         //
-        // Make sure we're alone or die.
-        if(!isLoaner()) { return false; }
-        
+        // Basic parameters must be initialized first.
+        targetXML = null;
+        classesToTarget = new List<String>();
+        remoteHostList = new List<RemoteHost>();
+        LOG = true;
+        DEBUG = true;
+        NO_EXECUTE = false;
+        failedRunners = new List<String>();
+        logLock = new Object();
+        runnerLock = new Object();
+        currentRunners = new Dictionary<String, DateTime>();
+
         //
         // Get config file data or die.
         try {
             configXML = readFileToXML(Constants.CONFIG_FILE);
-        } catch(Exception e) {
+        } catch (Exception e) {
             Lib.logException(e);
             return false;
         }
-
-        targetXML       = null;
-        classesToTarget = new List<String>();
-        remoteHostList  = new List<RemoteHost>();
-        LOG             = true;
-        DEBUG           = true;
-        NO_EXECUTE      = false;
-        failedRunners   = new List<String>();
-        logLock         = new Object();
-        runnerLock      = new Object();
-        currentRunners  = new Dictionary<String,DateTime>();
+        
         return true;
     }
 
@@ -276,6 +293,7 @@ public class Driver
     {
         String      log1 = "ERROR: Couldn't get object for " + host;
         String      log2 = "ERROR: " + host + " not found in runners list";
+        String      log3 = "Host: " + host + " reports result: SUCCESS";
         RemoteHost  host_object;
         
         if((host_object = getHostFromString(host)) == null) {
@@ -287,6 +305,7 @@ public class Driver
         if(!removeFromRunners(host)) {
             Lib.log(log2);
         }
+        Lib.log(log3);
     }
 
     /// <summary>
@@ -336,7 +355,7 @@ public class Driver
         String  log3    = "FATAL: Server doesn't seem to have started. Leaving";
         int     stall   = 6;
 
-        while(!serverThread.isAlive && serverThread.Join(Constants.TS_TIMEOUT)) {
+        while(!serverThread.IsAlive && serverThread.Join(Constants.TS_TIMEOUT)) {
             if((stall -= 1) > 0) {
                 Lib.log(log3);
                 return false;
@@ -346,9 +365,9 @@ public class Driver
         }
 
         foreach (RemoteHost host in remoteHostList) {
-            String log1 = "Trying " + host.HostName;
-            String log2 = "Trying to add to queue and semaphore";
-            String log3 = "Executing " + host.HostName;
+            String log6 = "Trying " + host.HostName;
+            String log7 = "Trying to add to queue and semaphore";
+            String log8 = "Executing " + host.HostName;
             String log4 = "Removing " + host.HostName + " (failed) from queue";
             String log5 = "Hosts in queue: ";
 
@@ -356,14 +375,14 @@ public class Driver
                 log5 += h + " ";
             }
 
-            Lib.debug(log1);
+            Lib.debug(log6);
             Lib.debug(log5);
-            Lib.debug(log2);
+            Lib.debug(log7);
             runnerPhore.WaitOne();
             lock (runnerLock) {
                 currentRunners.Add(host.HostName, DateTime.Now);
             }
-            Lib.debug(log3);
+            Lib.debug(log8);
             if (!host.execute()) {
                 Lib.debug(log4);
                 removeFromRunners(host.HostName);
@@ -390,7 +409,12 @@ public class Driver
     /// </summary>
     private static void printHelp()
     {
-        Console.WriteLine(Constants.INFO_HELP);
+        Console.WriteLine(
+            "Version: " 
+            + System.Reflection.Assembly.GetEntryAssembly().GetName().Version
+            + Environment.NewLine 
+            + "Usage: AutoRDrive.exe [class1] [class2] ...\n"
+        );
     }
 
 
@@ -403,6 +427,9 @@ public class Driver
             Environment.NewLine
             + "###############################" + Environment.NewLine
             + Constants.INFO_WELCOME + Environment.NewLine
+            + "Version: "
+            + System.Reflection.Assembly.GetEntryAssembly().GetName().Version
+            + Environment.NewLine
             + "###############################";
         Lib.log(welcomeString);
     }
@@ -444,7 +471,7 @@ public class Driver
     private static Boolean parseProgramArgs(string[] programArgs)
     {
         if(programArgs.Length == 0) {
-            printWelcome();
+            printHelp();
             return false;
         }
 

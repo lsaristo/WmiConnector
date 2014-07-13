@@ -25,6 +25,7 @@ static class Constants
     public const string DATE_FORMAT         = "yyyy_MM-dd";
     public const string BU_FILE_EXT         = "*.arc";
     public const string PROC_NAME           = "AutoRDrive"; // Don't use 'exe'
+    public const int ORPHAN_TIMEOUT         = 90; // minutes
     
 
     //
@@ -99,9 +100,7 @@ static class Constants
     // Informational messages
     public const string INFO_RUNNER_DONE        = "Runner thread has finished";
     public const string INFO_ALL_DONE           = "**************** DONE ******************";
-    public const string INFO_WELCOME            = "Auto R-Drive Has Started";
-    public const string INFO_HELP               = "Usage: AutoRDrive.exe [class1] [class2] ...\n";
-
+    public const string INFO_WELCOME            = "Auto R-Drive";
 
     //
     // Warning messages
@@ -116,11 +115,12 @@ static class Constants
     public const int FATAL_CONFIG   = -4;
     public const int FATAL_TARGETS  = -5;
     public const int FATAL_THREAD   = -6;
+    public const int FATAL_PCOUNT   = -7;
 
     //
     // Network constants
     public const int    BACKLOG     = 100;
-    public const int    TIMEOUT     = 100 * 1000; // (milliseconds)
+    public const int    REC_TIMEOUT = 20 * 1000; // 20 seconds
     public const int    BUFF_SIZE   = 1024;
     public const byte   RESULT_OK   = 0x35;
     public const byte   RESULT_ERR  = 0x36;
@@ -130,7 +130,7 @@ static class Constants
 
     //
     // Threading constants
-    public const int RUNNER_TIME    = 10 * 60000;   // 10 minutes
+    public const int RUNNER_TIME    = 1 * 60000;   // 1 minutes
     public const int SERVER_TIME    = 1 * 60000;    // 1 minute
     public const int TS_TIMEOUT     = 1 * 60000;    // 1 minute
 

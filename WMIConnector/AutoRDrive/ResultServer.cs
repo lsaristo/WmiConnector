@@ -59,10 +59,12 @@ class ResultServer
         String log5 = "Server received TCP connection";
         String log6 = "Got EOF, closing socket";
 
+        Lib.debug(log1);
+
         try {
             listener.Bind(localEndpoint);
             listener.Listen(backlog);
-            listener.ReceiveTimeout = Constants.TIMEOUT;
+            listener.ReceiveTimeout = Constants.REC_TIMEOUT;
 
             while(alive) {
                 try {
@@ -111,6 +113,7 @@ class ResultServer
     /// <see cref="Constants.TIMEOUT"/>
     public void stop()
     {
+        listener.Close(Constants.REC_TIMEOUT);
         alive = false;
     }
 } // End ResultServer class
