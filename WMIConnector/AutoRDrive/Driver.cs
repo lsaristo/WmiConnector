@@ -35,6 +35,8 @@ public class Driver
     public static   Object              runnerLock;
     public static   Semaphore           runnerPhore;
     public static   Int32               count;
+    public static   Thread              serverThread;
+    public static   Thread              runnerThread;
     public static   Dictionary<String, DateTime> currentRunners; 
 
     /// <summary>
@@ -63,6 +65,9 @@ public class Driver
             Lib.logException(e);
             return Constants.FATAL_TARGETS;
         }
+
+        //
+        // Execute main sentinel thread. Last block before exit. 
         if(!runSentinel()) { 
             Lib.log(Constants.ERROR_SENTINEL);
             return Constants.EXIT_FAILURE;
@@ -100,9 +105,14 @@ public class Driver
         String  log4    = "Server shutdown. Leaving";
 
         ResultServer resultServer = new ResultServer();
-        Thread runnerThread = new Thread(new ThreadStart(runMainLoop));
-        Thread serverThread = new Thread(new ThreadStart(resultServer.runServer));
+        runnerThread = new Thread(new ThreadStart(runMainLoop));
+        serverThread = new Thread(new ThreadStart(resultServer.runServer));
         serverThread.Start();
+
+        if(!serverThread.isAlive && serverThread.Join(Constants.TS_TIMEOUT)) {
+            Lib.log(Constants.ERROR_SERV_THREAD);
+            return Constants.FATAL_THREAD;
+        } 
         runnerThread.Start();
 
         //
@@ -141,10 +151,16 @@ public class Driver
             foreach (String host in currentRunners.Keys) {
                 TimeSpan diff = DateTime.Now - currentRunners[host];
                 if (diff.Minutes >= 100) {
-                    Lib.log(host + " hasn't responded in " 
-                        + diff.Minutes + " minutes. Orphaning");
-                    currentRunners.Remove(host);
-                    runnerPhore.Release();
+                    String msg = 
+                        "WARNING: host + " hasn't responded in " 
+                        + diff.Minutes + " minutes. Orphaning";
+                    Lib.log(msg);
+
+                    if(!currentRunners.Remove(host)) {
+                        Lib.log("WARNING: Couldn't purge old host "+host);
+                    } else {
+                        runnerPhore.Release();
+                    }
                 }
             }
         }
@@ -313,8 +329,22 @@ public class Driver
     /// <summary>
     /// Iterate through the remoteHostList and execute() or test() each host.
     /// </summary>
-    private static void runMainLoop()
+    private static Boolean runMainLoop()
     {
+        String  log1    = "Runner thread entered main loop";
+        String  log2    = "ERROR in runner thread. Listening server not alive";
+        String  log3    = "FATAL: Server doesn't seem to have started. Leaving";
+        int     stall   = 6;
+
+        while(!serverThread.isAlive && serverThread.Join(Constants.TS_TIMEOUT)) {
+            if((stall -= 1) > 0) {
+                Lib.log(log3);
+                return false;
+            }
+            Lib.log(log2);
+            Lib.log("Retrying " + stall + " more times before giving up");
+        }
+
         foreach (RemoteHost host in remoteHostList) {
             String log1 = "Trying " + host.HostName;
             String log2 = "Trying to add to queue and semaphore";
@@ -351,6 +381,7 @@ public class Driver
             }
             runnerPhore.WaitOne();
         }
+        return true;
     }
 
 

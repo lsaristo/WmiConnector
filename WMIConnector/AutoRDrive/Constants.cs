@@ -26,6 +26,7 @@ static class Constants
     public const string BU_FILE_EXT         = "*.arc";
     public const string PROC_NAME           = "AutoRDrive"; // Don't use 'exe'
     
+
     //
     // WMI
     public const string WMI_QUERY = "Select csname from Win32_OperatingSystem";
@@ -84,6 +85,8 @@ static class Constants
     public const string ERROR_CONNECT       = "Error connecting to target WMI";
     public const string ERROR_CONFIG        = "ERROR: Malformed config file";
     public const string ERROR_SENTINEL      = "ERROR: Something went wrong during sentinel execution";
+    public const string ERROR_SERV_THREAD   = "ERROR: Server thread has failed";
+    public const string ERROR_RUN_THREAD    = "ERROR: Runner thread has failed";
 
     //
     // Log messages
@@ -112,6 +115,7 @@ static class Constants
     public const int FATAL_ARGS     = -3;
     public const int FATAL_CONFIG   = -4;
     public const int FATAL_TARGETS  = -5;
+    public const int FATAL_THREAD   = -6;
 
     //
     // Network constants
@@ -128,6 +132,7 @@ static class Constants
     // Threading constants
     public const int RUNNER_TIME    = 10 * 60000;   // 10 minutes
     public const int SERVER_TIME    = 1 * 60000;    // 1 minute
+    public const int TS_TIMEOUT     = 1 * 60000;    // 1 minute
 
 
 } // End Constants class
