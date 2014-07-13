@@ -10,19 +10,31 @@ using System.Net.Sockets;
 namespace AutoBack 
 {
 
+/// <summary>
+/// The result server listens for TCP connections on a port as defined in 
+/// configuration file for messages sent by RemoteHosts and acts accordingly. 
+/// </summary>
 class ResultServer 
-{
-    Int32 port;
-    Int32 bufferSize = 1024;
-    IPEndPoint localEndpoint;
-    Socket listener;
-    int backlog;
-    byte[] bytes;
-    bool alive;
-    public static ManualResetEvent reset = new ManualResetEvent(false); 
+{   
+    public static      ManualResetEvent    reset;
+    
+    private Int32       port;
+    private Int32       bufferSize;
+    private Int32       backlog;
+    private IPEndPoint  localEndpoint;
+    private Socket      listener;
+    private Byte[]      bytes;
+    private Boolean     alive;
 
+    /// <summary>
+    /// Constructor for the ResultServer
+    /// </summary>
+    /// <param name="backlog">Backlog as defined by .NET</param>
+    /// <see cref="Constants.BACKLOG"/>
     public ResultServer(int backlog = Constants.BACKLOG) 
     {
+        bufferSize = Constants.BUFF_SIZE;
+        reset = new ManualResetEvent(false); 
         port = Convert.ToInt32(Driver.getConfigOption(Constants.SERVER_PORT));
         localEndpoint = new IPEndPoint(IPAddress.Any, port);
         listener = new Socket(
@@ -34,6 +46,10 @@ class ResultServer
         alive = true;
     }
 
+    /// <summary>
+    /// Start this server and enter a listening loop for connections until 
+    /// stop() is called.
+    /// </summary>  
     public void runServer()
     {
         try {
@@ -44,7 +60,7 @@ class ResultServer
             while(alive) {
                 try {
                     String inData = "";
-                    Lib.debug("Waiting for connections to " + port);
+                    Lib.debug("Listening on port " + port);
                     Socket handler = listener.Accept();
                     Lib.debug("Got connection, Handling");
 
@@ -65,32 +81,15 @@ class ResultServer
                     String responseHost = responseArray[0];
                     String responseResult = responseArray[1];
 
-                    if (Driver.currentRunners.ContainsKey(responseHost)) {
-                        String msg = 
-                            responseHost + " reports " + responseResult
-                            + ". Removing from array of runners";
-                        Lib.debug(msg);
-                        lock(Driver.runnerLock) {
-                            if (!Driver.currentRunners.Remove(responseHost)) {
-                                Lib.log("WARNING: {0} not found in runner list", responseHost);
-                            }
-                            Driver.runnerPhore.Release();
-                        }
-                    } else {
-                        String msg = 
-                            "Warning, " + responseHost + " reported " + responseResult
-                            + ". This host is not present in the array of current"
-                            + " runners. This should be dealt with.";
-                        Lib.log(msg);
-                    }
-                    if (!responseResult.ToLower().Contains("success")) {
-                        lock (Driver.runnerLock) {
-                            Driver.failedRunners.Add(responseHost);
-                        }
-                    } else {
-                        Lib.log(responseHost + " reported successful backup");
-                    }
+                    Byte msg = 
+                        (responseResult.ToLower().Contains("Success"))
+                        ? Constants.RESULT_OK
+                        : Constants.RESULT_ERR;
+                    Driver.handleMsg(responseHost, msg);
+
+                   
                 } catch(Exception e) { 
+                    Lib.debug("Caught exception inside Server loop");
                     Lib.debug(e.Message);
                 }
             }
@@ -99,6 +98,10 @@ class ResultServer
         }
     }
 
+    /// <summary>
+    /// Shutdown this server within at most 1 TIMEOUT period. 
+    /// </summary>
+    /// <see cref="Constants.TIMEOUT"/>
     public void stop()
     {
         alive = false;

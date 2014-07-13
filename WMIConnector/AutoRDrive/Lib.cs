@@ -24,10 +24,10 @@ static class Lib
     /// <param name="level">Severity level. Valid inputs are those
     /// logging severity levels supported by the Windows API.
     /// </param>
-    /// <param name="msg">Message to log.</param>
+    /// <param name="log6">Message to log.</param>
     /// <see cref="Constants.cs"/> 
     /// <see cref="config.xml"/>
-    public static void log(string msg, string level = Constants.LL_INFO)
+    public static void log(string msg, string host = null, string level = Constants.LL_INFO)
 	{
         lock (Driver.logLock) {
             if (!Driver.LOG) { return; }
@@ -62,7 +62,7 @@ static class Lib
     /// <remarks>This method does nothing if Driver.DEBUG is false.
     /// </remarks>
     /// <param name="message">Message to write.</param>
-    public static void debug(string message)
+    public static void debug(string message, string host = null)
 	{
         if (Driver.DEBUG) {
             log(msg: "[ DEBUG ]: " + message);
@@ -89,7 +89,7 @@ static class Lib
     /// <remarks>This method does nothing if Driver.DEBUG is false.
     /// </remarks>
     /// <param name="condition">Condition that must be true</param>
-    /// <param name="msg">Error msg if condition is false to log.
+    /// <param name="log6">Error log6 if condition is false to log.
     /// </param>
     public static void assertTrue(bool cond, string msg = Constants.ERROR_ASSERT) 
     {
@@ -97,6 +97,11 @@ static class Lib
             debug(msg + " " + cond);
             Environment.Exit(Constants.EXIT_FAILURE);
         }              
+    }
+
+    internal static void log(object p)
+    {
+        throw new NotImplementedException();
     }
 }
 }

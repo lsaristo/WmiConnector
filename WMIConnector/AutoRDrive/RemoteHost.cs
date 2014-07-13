@@ -16,18 +16,18 @@ namespace AutoBack
 /// </summary>
 class RemoteHost 
 {
-    public Boolean Enabled { get; set; }
-    public String SaveDir { get; set; }
-    public String HostAddress { get; set; }
-    public String HostClass { get; set; }
-    public String HostName { get; set; }
-    public String PrimaryUser { get; set; }
-    public String ArgsSetter { get; set; }
-    public String RdiFile { get; set; }
-    public Int32 HistoryCount { get; set; }
-    public ManagementScope Scope { get; set; }
-    public ManagementClass ConnectionClass { get; set; }
-    public ManagementBaseObject ProgramArgs { get; set; }
+    public  Boolean                 Enabled         { get; set; }
+    public  String                  SaveDir         { get; set; }
+    public  String                  HostAddress     { get; set; }
+    public  String                  HostClass       { get; set; }
+    public  String                  HostName        { get; set; }
+    public  String                  PrimaryUser     { get; set; }
+    public  String                  ArgsSetter      { get; set; }
+    public  String                  RdiFile         { get; set; }
+    public  Int32                   HistoryCount    { get; set; }
+    public  ManagementScope         Scope           { get; set; }
+    public  ManagementClass         ConnectionClass { get; set; }
+    public  ManagementBaseObject    ProgramArgs     { get; set; }
     
 
     /// <summary>
@@ -39,7 +39,7 @@ class RemoteHost
 	{
         try {
             if (!Enabled && !Driver.NO_EXECUTE) { return false; }
-            if (!preConnect() || !Enabled) { return false; }
+            if (!preConnect() || !Enabled)      { return false; }
             makeSaveDirectory();
             consolodateSaveDirs();
             cleanSaveDirectory();
@@ -59,7 +59,7 @@ class RemoteHost
     private void verifyHostname() 
     {
         ObjectQuery query = 
-            new ObjectQuery("Select csname from Win32_OperatingSystem");
+            new ObjectQuery(Constants.WMI_QUERY);
         ManagementObjectSearcher searcher =
             new ManagementObjectSearcher(Scope, query);
         ManagementObjectCollection queryCol = searcher.Get();
@@ -81,7 +81,7 @@ class RemoteHost
                             + "to " + HostName + " at "
                             + Driver.currentRunners[HostName]);
                     } else {
-                        Lib.log("WARNING: Couldn't find " + oldName + " in runners");
+                        Lib.log("WARNING: Couldn't find " + oldName + " in list");
                     }
                 }
             }
@@ -93,32 +93,20 @@ class RemoteHost
     /// but only attempts to establish a WMI connection to the RemoteHost and
     /// does not actually execute any commands.
     /// </summary>
+    /// <returns>True if success.</returns>
     public bool preConnect()
 	{
-        try {
-            if(HostName.Equals("")) {
-                Lib.log(HostAddress + " has an empty hostname, skipping");
-                return false;
-            }
-            HostAddress = Dns.GetHostEntry(HostName).AddressList[0].ToString();
-            Lib.debug("Resolved " + HostName + " to " + HostAddress);
-        } catch (Exception e) {
-            Lib.log(
-                "Couldn't resolve host " + HostName 
-                + " falling back to " + HostAddress
-                + " DNS Server reported: " + e.Message
-                , Constants.LL_WARNING
-            );
-        }
-        bool pingSuccess = (new Ping()).Send(HostAddress).Status == IPStatus.Success; 
-        if(!pingSuccess) {
-            Lib.log(
-                HostName + " (" + HostAddress + ") "
-                + "Didn't respond to ICMP Echo Request"
-                , Constants.LL_WARNING
-            );
+        //
+        // GET IP for host.
+        if(!resolveHost()) { return false; }
+
+        //
+        // Ping to see if host is up.
+        if(!((new Ping()).Send(HostAddress).Status == IPStatus.Success)) {
+            Lib.log("Host not responding. Skipping");
             return false;
         }
+
         try {
             Scope = new ManagementScope("\\\\" + HostAddress + Constants.WMI_ROOT);
             Scope.Connect();
@@ -138,6 +126,33 @@ class RemoteHost
     }
 
     /// <summary>
+    /// Try to query hostname via DNS. Log failures. 
+    /// </summary>
+    /// <returns>True if success.</returns>
+    private bool resolveHost()
+    {
+        String log1 = HostAddress + " has an empty hostname, skipping";
+        String log2 = "Resolved " + HostName + " to " + HostAddress;
+        String log3 = "Couldn't resolve host " + HostName + " falling back to " 
+            + HostAddress;
+
+        try {
+            if(HostName.Equals("")) {
+                Lib.log(log1);
+                return false;
+            }
+            HostAddress = Dns.GetHostEntry(HostName).AddressList[0].ToString();
+            Lib.debug(log2);
+            return true;
+        } catch (Exception e) {
+            Lib.log(log3);
+            Lib.logException(e);
+        }
+        return false;
+    }
+
+
+    /// <summary>
     /// Generate the custom RDI file from this remote host.
     /// </summary>
     /// <remarks>
@@ -148,25 +163,24 @@ class RemoteHost
 	{
         string fileText = File.ReadAllText(
             Driver.getConfigOption(Constants.RDIMASTERPATH) + "\\" 
-            + Driver.getConfigOption(Constants.RDIMASTER)
-        );
+            + Driver.getConfigOption(Constants.RDIMASTER));
         string outputFile = 
             SaveDir + "\\" 
-            + HostName + "_" + DateTime.Now.ToString("yyyy_MM-dd");
+            + HostName + "_" + DateTime.Now.ToString(Constants.DATE_FORMAT);
         File.WriteAllText(RdiFile, fileText.Replace(Constants.PLACEHOLDER, outputFile));
     }
 
     /// <summary>
     /// Clean the destination directory of stale backups.
     /// </summary>
-    private void cleanSaveDirectory() 
+    public void cleanSaveDirectory() 
     {
         string[] files;
         Comparison<String> comp = (x, y) => {
             return File.GetCreationTime(x).CompareTo(File.GetCreationTime(y));
         };
 
-        while ((files = Directory.GetFiles(SaveDir, "*.arc").ToArray()).Length > HistoryCount) {
+        while ((files = Directory.GetFiles(SaveDir, Constants.BU_FILE_EXT).ToArray()).Length > HistoryCount) {
             Array.Sort(files, comp);
             String file = Enumerable.First<String>(files);
             File.Delete(file);
@@ -174,6 +188,11 @@ class RemoteHost
         }
     }
 
+    /// <summary>
+    /// If multiple directories are found containing the HostName of this 
+    /// RemoteHost they are consolidated into a single directory as defined
+    /// by this RemoteHost's SaveDir property.
+    /// </summary>
     private void consolodateSaveDirs() {
         String basePath = SaveDir.Substring(0, SaveDir.LastIndexOf("\\"));
         var dirs =
@@ -183,14 +202,17 @@ class RemoteHost
       
         foreach (String dir in dirs) {
             Lib.log("Found duplicate folder for hostname " + HostName);
+
             foreach (String file in Directory.GetFiles(dir)) {
                 File.Move(file, SaveDir + "\\" + Path.GetFileName(file));
-                Lib.log("Moved " + file + " from duplicate folder to " + SaveDir);
+                Lib.log("Moved " + file + " from duplicate dir to " + SaveDir);
             }
+            
             foreach (String subdir in Directory.GetDirectories(dir)) {
                 Directory.Move(subdir, SaveDir+"\\"+Path.GetFileName(subdir));
-                Lib.log("Moved " + subdir + " from duplicate folder to " + SaveDir);
+                Lib.log("Moved " + subdir + " from duplicate dir to " + SaveDir);
             }
+            
             if (Directory.EnumerateFileSystemEntries(dir).ToArray().Length == 0) {
                 Directory.Delete(dir);
                 Lib.log("Removed duplicate directory " + dir);
@@ -201,7 +223,7 @@ class RemoteHost
     }
 
     /// <summary>
-    /// Create the destination directory if it doesn't alrready exist. 
+    /// Create the destination directory if it doesn't already exist. 
     /// </summary>
     /// <remarks>
     /// The destination directory is given by the base save directory as given
@@ -214,8 +236,8 @@ class RemoteHost
             SaveDir + "\\"
             + HostName + " - " + (PrimaryUser == "" ? HostClass : PrimaryUser);
 
-        if (!System.IO.Directory.Exists(SaveDir))
-            System.IO.Directory.CreateDirectory(SaveDir);
+        if (!Directory.Exists(SaveDir))
+            Directory.CreateDirectory(SaveDir);
     }
 } // End of RemoteHost class. 
 } // End of namespace
