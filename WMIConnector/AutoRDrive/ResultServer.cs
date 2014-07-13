@@ -52,6 +52,13 @@ class ResultServer
     /// </summary>  
     public void runServer()
     {
+        String log1 = "Starting result server";
+        String log2 = "Caught exception inside server loop...";
+        String log3 = "ERROR: Caught exception in runServer()...";
+        String log4 = "Server listening on port " + port;
+        String log5 = "Server received TCP connection";
+        String log6 = "Got EOF, closing socket";
+
         try {
             listener.Bind(localEndpoint);
             listener.Listen(backlog);
@@ -60,16 +67,16 @@ class ResultServer
             while(alive) {
                 try {
                     String inData = "";
-                    Lib.debug("Listening on port " + port);
+                    Lib.debug(log4);
                     Socket handler = listener.Accept();
-                    Lib.debug("Got connection, Handling");
+                    Lib.debug(log5);
 
                     while(true) {
                         bytes = new byte[bufferSize];
                         int bytesRec = handler.Receive(bytes);
                         inData += Encoding.Unicode.GetString(bytes,0,bytesRec);
-                        if(inData.IndexOf("<EOF>") > -1) {
-                            Lib.debug("Got EOF, closing socket");
+                        if(inData.IndexOf(Constants.MSG_EOF) > -1) {
+                            Lib.debug(log6);
                             break; 
                         }
                     }
@@ -77,22 +84,23 @@ class ResultServer
                     handler.Close();
                     Lib.debug("Received connection with string " + inData);
 
-                    String[] responseArray = inData.Split(':');
+                    String[] responseArray = inData.Split(Constants.MSG_DELIM);
                     String responseHost = responseArray[0];
                     String responseResult = responseArray[1];
 
                     Byte msg = 
-                        (responseResult.ToLower().Contains("Success"))
+                        (responseResult.ToLower().Contains(Constants.MSG_OK))
                         ? Constants.RESULT_OK
                         : Constants.RESULT_ERR;
                     Driver.handleMsg(responseHost, msg);
                    
                 } catch(Exception e) { 
-                    Lib.debug("Caught exception inside Server loop");
+                    Lib.debug(log2);
                     Lib.debug(e.Message);
                 }
             }
       } catch(Exception e) {
+            Lib.debug(log3);
             Lib.logException(e);
         }
     }

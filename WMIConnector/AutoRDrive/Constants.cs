@@ -115,11 +115,14 @@ static class Constants
 
     //
     // Network constants
-    public const int BACKLOG        = 100;
-    public const int TIMEOUT        = 100 * 1000; // (milliseconds)
-    public const int BUFF_SIZE      = 1024;
-    public const byte RESULT_OK     = 0x35;
-    public const byte RESULT_ERR    = 0x36;
+    public const int    BACKLOG     = 100;
+    public const int    TIMEOUT     = 100 * 1000; // (milliseconds)
+    public const int    BUFF_SIZE   = 1024;
+    public const byte   RESULT_OK   = 0x35;
+    public const byte   RESULT_ERR  = 0x36;
+    public const String MSG_OK      = "success";
+    public const String MSG_EOF     = "<EOF>";
+    public const char   MSG_DELIM   = ':';
 
     //
     // Threading constants

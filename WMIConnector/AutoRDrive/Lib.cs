@@ -72,7 +72,8 @@ static class Lib
     /// <summary>
     /// Write an exception to the log. 
     /// </summary>
-    /// <param name="e"></param>
+    /// <param name="e">Exception object</param>
+    /// <param name="hostIdentifier">Hostname (if applicable) that caused it</param>
     public static void logException(Exception e, string hostIdentifier = null)
     {
         string error = 
@@ -80,7 +81,7 @@ static class Lib
             + (hostIdentifier != null ? hostIdentifier : " ") 
             + e.Message + " " 
             + (e.InnerException != null ? e.InnerException.Message : "");
-        log(Constants.LL_ERROR, error);
+        log(error);
     }
 
     /// <summary>
