@@ -16,18 +16,18 @@ namespace AutoBack
 /// </summary>
 class RemoteHost 
 {
-    public  Boolean                 Enabled         { get; set; }
-    public  String                  SaveDir         { get; set; }
-    public  String                  HostAddress     { get; set; }
-    public  String                  HostClass       { get; set; }
-    public  String                  HostName        { get; set; }
-    public  String                  PrimaryUser     { get; set; }
-    public  String                  ArgsSetter      { get; set; }
-    public  String                  RdiFile         { get; set; }
-    public  Int32                   HistoryCount    { get; set; }
-    public  ManagementScope         Scope           { get; set; }
-    public  ManagementClass         ConnectionClass { get; set; }
-    public  ManagementBaseObject    ProgramArgs     { get; set; }
+    public Boolean                 Enabled         { get; set; }
+    public String                  SaveDir         { get; set; }
+    public String                  HostAddress     { get; set; }
+    public String                  HostClass       { get; set; }
+    public String                  HostName        { get; set; }
+    public String                  PrimaryUser     { get; set; }
+    public String                  ArgsSetter      { get; set; }
+    public String                  RdiFile         { get; set; }
+    public Int32                   HistoryCount    { get; set; }
+    public ManagementScope         Scope           { get; set; }
+    public ManagementClass         ConnectionClass { get; set; }
+    public ManagementBaseObject    ProgramArgs     { get; set; }
     
 
     /// <summary>

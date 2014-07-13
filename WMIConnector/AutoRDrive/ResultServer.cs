@@ -86,7 +86,6 @@ class ResultServer
                         ? Constants.RESULT_OK
                         : Constants.RESULT_ERR;
                     Driver.handleMsg(responseHost, msg);
-
                    
                 } catch(Exception e) { 
                     Lib.debug("Caught exception inside Server loop");

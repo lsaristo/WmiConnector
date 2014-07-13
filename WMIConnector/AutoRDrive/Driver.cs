@@ -6,6 +6,7 @@ using System.Xml.Linq;
 using System.Data;
 using System.Data.OleDb;
 using System.Threading;
+using System.Diagnostics;
 
 namespace AutoBack 
 {
@@ -69,6 +70,22 @@ public class Driver
             Lib.log(Constants.INFO_ALL_DONE);
             return Constants.EXIT_SUCCESS;
         }
+    }
+
+    /// <summary>
+    /// Check whether another instance of this executable is running.
+    /// </summary>
+    private static Boolean isLoaner()
+    {
+        String log1 = 
+            "ERROR: Only one instance of this program may run "
+            + "at a time. Another is already running.";
+
+        if(!getProcessByName(Constants.PROC_NAME).Length == 0) {
+            Lib.log(log1);
+            return false;
+        }
+        return true;
     }
     
     /// <summary>
@@ -165,12 +182,19 @@ public class Driver
     /// </remarks>
     private static bool init()
     {
+        //
+        // Make sure we're alone or die.
+        if(!isLoaner()) { return false; }
+        
+        //
+        // Get config file data or die.
         try {
             configXML = readFileToXML(Constants.CONFIG_FILE);
         } catch(Exception e) {
             Lib.logException(e);
             return false;
         }
+
         targetXML       = null;
         classesToTarget = new List<String>();
         remoteHostList  = new List<RemoteHost>();
@@ -234,7 +258,19 @@ public class Driver
     /// <param name="host">Hostname of RemoteHost</param>
     private static void handleSuccess(String host)
     {
-        getHostFromString(host).cleanSaveDirectory();
+        String      log1 = "ERROR: Couldn't get object for " + host;
+        String      log2 = "ERROR: " + host + " not found in runners list";
+        RemoteHost  host_object;
+        
+        if((host_object = getHostFromString(host)) == null) {
+            Lib.log(log1);
+        } else {
+            host_object.cleanSaveDirectory();
+        }
+
+        if(!removeFromRunners(host)) {
+            Lib.log(log2);
+        }
     }
 
     /// <summary>
@@ -244,11 +280,16 @@ public class Driver
     /// <param name="log6">Result of operation</param>
     public static void handleMsg(String host, Byte msg)
     {
+        String log1 = "Handing success for " + host;
+        String log2 = "Handling failure for " + host;
+
         switch(msg) {
             case Constants.RESULT_OK:
+                Lib.debug(log1);
                 handleSuccess(host);
                 break;
             case Constants.RESULT_ERR:
+                Lib.debug(log2);
                 handleFailure(host);
                 break;
         }
@@ -299,15 +340,15 @@ public class Driver
             }
         }
         while (true) {
+            String log6 =
+                "Done calling hosts. Still waiting on ~ "
+                + currentRunners.Count + " more host replies";
+            Lib.debug(log6);
             lock (runnerLock) {
                 if (currentRunners.Count == 0) {
                     break;
                 }
             }
-            String log6 =
-                "Done calling hosts. Still waiting on ~ "
-                + currentRunners.Count + " more host replies";
-            Lib.debug(log6);
             runnerPhore.WaitOne();
         }
     }
