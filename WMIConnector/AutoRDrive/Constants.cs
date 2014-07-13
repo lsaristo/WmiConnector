@@ -24,7 +24,7 @@ static class Constants
     public const string FALLBACK_LOG        = "AutoRDrive_Fallback_Log";
     public const string DATE_FORMAT         = "yyyy_MM-dd";
     public const string BU_FILE_EXT         = "*.arc";
-    public const string PROC_NAME           = "AutoRDrive.exe";
+    public const string PROC_NAME           = "AutoRDrive"; // Don't use 'exe'
     
     //
     // WMI
