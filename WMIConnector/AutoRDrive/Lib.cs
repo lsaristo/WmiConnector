@@ -15,8 +15,11 @@ namespace AutoBack
 /// <see cref="Constants.cs"/>
 static class Lib 
 {
-    private static string logFile = null;
-    private static string logPath = null;
+    private static string logFile       = null;
+    private static string logPath       = null;
+    private static string fullLogPath   = null;
+    private static string imageLog      = null;
+    private static string filerPath     = null;
 
     /// <summary>
     /// Write an event to the System log.
@@ -32,14 +35,10 @@ static class Lib
         lock (Driver.logLock) {
             if (!Driver.LOG) { return; }
 
-            string fullLogPath = null;
             string fallbackLog = null;
             string logString = null;
 
             try {
-                logFile = Driver.getConfigOption(Constants.LOGFILE);
-                logPath = Driver.getConfigOption(Constants.LOGPATH);
-                fullLogPath = logPath + "\\" + logFile;
                 fallbackLog = Environment.CurrentDirectory + Constants.FALLBACK_LOG;
                 logString = DateTime.Now.ToString() + ": " + msg + Environment.NewLine;
                 Console.WriteLine(logString);
@@ -51,6 +50,55 @@ static class Lib
                 using (StreamWriter w = File.AppendText(fallbackLog)) {
                     w.Write(logString + " " + e);
                 }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Perform log initialization. 
+    /// </summary>
+    public static void logInit()
+    {
+        logFile = Driver.getConfigOption(Constants.LOGFILE);
+        logPath = Driver.getConfigOption(Constants.LOGPATH);
+        fullLogPath = logPath + "\\" + logFile;
+        imageLog = Driver.getConfigOption(Constants.IMAGE_LOG);
+        filerPath = logPath + "\\" + Constants.FILE_LOGS;
+        turnover();
+    }
+
+    /// <summary>
+    /// Move logs into a filer if they are too big. 
+    /// </summary>
+    public static void turnover() 
+    {
+        int i = 1;
+        String newLogName = logFile.Split('.')[0];
+        String newImageName =
+            imageLog.Substring(imageLog.LastIndexOf("\\") + 1).Split('.')[0];
+
+        if (!Directory.Exists(filerPath)) {
+            Directory.CreateDirectory(filerPath);
+        }
+
+        if (File.Exists(fullLogPath) 
+                && (new FileInfo(fullLogPath)).Length > Constants.LOG_SIZE_LIMIT) {
+
+            for ( ; File.Exists(filerPath + "\\" + newLogName + "_" + i + ".log"); i++)
+                ;
+            File.Move(fullLogPath, filerPath + "\\" + newLogName + "_" + i + ".log");
+            log("INFO: Log turned over");
+        }
+
+        if (File.Exists(imageLog)
+                && (new FileInfo(imageLog)).Length > Constants.LOG_SIZE_LIMIT) {
+
+            for (i = 1; File.Exists(filerPath + "\\" + newImageName + "_" + i + ".log"); i++)
+                ;
+            File.Move(imageLog, filerPath + "\\" + newImageName + "_" + i + ".log");
+
+            using (StreamWriter w = File.AppendText(imageLog)) {
+                w.Write(DateTime.Now.ToString() + "INFO: Log turned over");
             }
         }
     }

@@ -23,9 +23,13 @@ static class Constants
     public const string PLACEHOLDER         = "IMAGE_PLACEHOLDER";
     public const string FALLBACK_LOG        = "AutoRDrive_Fallback_Log";
     public const string DATE_FORMAT         = "yyyy_MM-dd";
-    public const string BU_FILE_EXT         = "*.arc";
+    public const string BU_FILE_WILD        = "*.arc";
+    public const string BU_FILE_EXT         = ".arc";
     public const string PROC_NAME           = "AutoRDrive"; // Don't use 'exe'
+    public const string FILE_LOGS           = "Filed Logs";
+    public const int LOG_SIZE_LIMIT         = 20000; // Bytes
     public const int ORPHAN_TIMEOUT         = 90; // minutes
+    
     
 
     //
@@ -71,6 +75,7 @@ static class Constants
     public static readonly XName TARGETFILENAME     = "TargetsFileName";
     public static readonly XName TARGETXMLFILENAME  = "TargetsXMLFileName";
     public static readonly XName CONCURRENT_LIMIT   = "ConcurrentLimit";
+    public static readonly XName IMAGE_LOG          = "ImageLog";
 
     //
     // Valid program arguments

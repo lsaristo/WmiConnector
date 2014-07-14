@@ -78,6 +78,7 @@ public class Driver
         }
     }
 
+
     /// <summary>
     /// Check whether another instance of this executable is running.
     /// </summary>
@@ -234,10 +235,9 @@ public class Driver
         try {
             configXML = readFileToXML(Constants.CONFIG_FILE);
         } catch (Exception e) {
-            Lib.logException(e);
             return false;
         }
-        
+        Lib.logInit();
         return true;
     }
 
@@ -444,8 +444,8 @@ public class Driver
         try {
             return XDocument.Load(file);
         } catch (Exception e) {
-            Lib.log(Constants.ERROR_FILE_PARSE + file + " " + e);
-            throw;
+            Console.WriteLine("ERROR: Failed to read XML data");
+            return null;
         }
     }
 

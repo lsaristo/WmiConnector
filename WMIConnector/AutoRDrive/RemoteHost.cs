@@ -123,7 +123,7 @@ class RemoteHost
             Lib.logException(e, Constants.TEST_FAIL + " " + HostName);
             return false;
         }
-        Lib.log("WMI Connection Established: " + " " + HostName);
+        Lib.debug("WMI Connection Established: " + " " + HostName);
         return true;
     }
 
@@ -180,7 +180,7 @@ class RemoteHost
     {
         SaveFile = HostName + "_" + DateTime.Now.ToString(Constants.DATE_FORMAT);
 
-        if(File.Exists(SaveDir + "\\" + SaveFile)) {
+        if(File.Exists(SaveDir + "\\" + SaveFile + Constants.BU_FILE_EXT)) {
             Lib.debug(SaveDir + "\\" + SaveFile + " already exists, Skipping");
             return false;
         }
@@ -197,7 +197,7 @@ class RemoteHost
             return File.GetCreationTime(x).CompareTo(File.GetCreationTime(y));
         };
 
-        while ((files = Directory.GetFiles(SaveDir, Constants.BU_FILE_EXT).ToArray()).Length > HistoryCount) {
+        while ((files = Directory.GetFiles(SaveDir, Constants.BU_FILE_WILD).ToArray()).Length > HistoryCount) {
             Array.Sort(files, comp);
             String file = Enumerable.First<String>(files);
             File.Delete(file);
