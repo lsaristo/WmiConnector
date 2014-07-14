@@ -24,6 +24,7 @@ class RemoteHost
     public String                  PrimaryUser     { get; set; }
     public String                  ArgsSetter      { get; set; }
     public String                  RdiFile         { get; set; }
+    public String                  SaveFile        { get; set; }
     public Int32                   HistoryCount    { get; set; }
     public ManagementScope         Scope           { get; set; }
     public ManagementClass         ConnectionClass { get; set; }
@@ -39,8 +40,9 @@ class RemoteHost
     {
         try {
             if (!Enabled && !Driver.NO_EXECUTE) { return false; }
-            if (!preConnect() || !Enabled)      { return false; }
+            if (!preConnect() || !Enabled) { return false; }
             makeSaveDirectory();
+            if (!makeSaveFile()) { return false; }
             consolodateSaveDirs();
             cleanSaveDirectory();
             generateRdi();
@@ -165,10 +167,24 @@ class RemoteHost
         string fileText = File.ReadAllText(
             Driver.getConfigOption(Constants.RDIMASTERPATH) + "\\" 
             + Driver.getConfigOption(Constants.RDIMASTER));
-        string outputFile = 
-            SaveDir + "\\" 
-            + HostName + "_" + DateTime.Now.ToString(Constants.DATE_FORMAT);
-        File.WriteAllText(RdiFile, fileText.Replace(Constants.PLACEHOLDER, outputFile));
+
+        String fullPath = SaveDir + "\\" + SaveFile;
+        File.WriteAllText(RdiFile, fileText.Replace(Constants.PLACEHOLDER, fullPath));
+    }
+
+    /// <summary>
+    /// Generate the formatted output file to be used as a backup file name. 
+    /// </summary>
+    /// <returns>True if filename does not already exist.</returns>
+    private Boolean makeSaveFile()
+    {
+        SaveFile = HostName + "_" + DateTime.Now.ToString(Constants.DATE_FORMAT);
+
+        if(File.Exists(SaveDir + "\\" + SaveFile)) {
+            Lib.debug(SaveDir + "\\" + SaveFile + " already exists, Skipping");
+            return false;
+        }
+        return true;
     }
 
     /// <summary>

@@ -258,9 +258,9 @@ public class Driver
             Lib.log(log2);
         }
 
-        if(File.Exists(failedHost.SaveDir)) {
+        if(File.Exists(failedHost.SaveDir + "\\" + failedHost.SaveFile)) {
             try { 
-                File.Delete(failedHost.SaveDir);
+                File.Delete(failedHost.SaveDir + "\\" + failedHost.SaveFile);
                 Lib.log(log4);
             } catch(Exception e) {
                 Lib.log(log3);
