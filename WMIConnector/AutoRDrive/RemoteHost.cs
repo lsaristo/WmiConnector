@@ -26,6 +26,7 @@ class RemoteHost
     public String                  RdiFile         { get; set; }
     public String                  SaveFile        { get; set; }
     public Int32                   HistoryCount    { get; set; }
+    public Int32                   PID             { get; set; }
     public ManagementScope         Scope           { get; set; }
     public ManagementClass         ConnectionClass { get; set; }
     public ManagementBaseObject    ProgramArgs     { get; set; }
@@ -46,7 +47,10 @@ class RemoteHost
             consolodateSaveDirs();
             cleanSaveDirectory();
             generateRdi();
-            ConnectionClass.InvokeMethod(Constants.METHOD, ProgramArgs, null);
+            Int32 PID = 
+                Convert.ToInt32(
+                ConnectionClass.InvokeMethod(Constants.METHOD, 
+                ProgramArgs, null)["ProcessID"]);
         } catch (Exception e) {
             Lib.logException(e, HostName);
             return false;
@@ -88,6 +92,21 @@ class RemoteHost
                 }
             }
         }
+    }
+
+    public String queryWMI(String inQuery, String property)
+    {
+        ObjectQuery query = 
+            new ObjectQuery(inQuery);
+        ManagementObjectSearcher searcher =
+            new ManagementObjectSearcher(Scope, query);
+        ManagementObjectCollection queryCol = searcher.Get();
+        String outString = "";
+
+        foreach(var m in queryCol) {
+            outString += m[property] + ",";
+        }
+        return outString;
     }
 
     /// <summary>

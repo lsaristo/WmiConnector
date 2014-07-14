@@ -312,7 +312,7 @@ public class Driver
     /// Deal with message received at the ResultServer.
     /// </summary>
     /// <param name="host">Hostname for message.</param>
-    /// <param name="log6">Result of operation</param>
+    /// <param name="log7">Result of operation</param>
     public static void handleMsg(String host, Byte msg)
     {
         String log1 = "Handing success for " + host;
@@ -370,6 +370,7 @@ public class Driver
             String log8 = "Executing " + host.HostName;
             String log4 = "Removing " + host.HostName + " (failed) from queue";
             String log5 = "Hosts in queue: ";
+            String log9 = "Skipping " + host;
 
             foreach (String h in currentRunners.Keys) {
                 log5 += h + " ";
@@ -385,7 +386,10 @@ public class Driver
             Lib.debug(log8);
             if (!host.execute()) {
                 Lib.debug(log4);
+                Lib.log(log9);
                 removeFromRunners(host.HostName);
+            } else {
+                Lib.debug("Got PID for process: " + host.PID);
             }
         }
         while (true) {

@@ -27,7 +27,7 @@ static class Lib
     /// <param name="level">Severity level. Valid inputs are those
     /// logging severity levels supported by the Windows API.
     /// </param>
-    /// <param name="log6">Message to log.</param>
+    /// <param name="log7">Message to log.</param>
     /// <see cref="Constants.cs"/> 
     /// <see cref="config.xml"/>
     public static void log(string msg, string host = null, string level = Constants.LL_INFO)
@@ -98,7 +98,10 @@ static class Lib
             File.Move(imageLog, filerPath + "\\" + newImageName + "_" + i + ".log");
 
             using (StreamWriter w = File.AppendText(imageLog)) {
-                w.Write(DateTime.Now.ToString() + "INFO: Log turned over");
+                w.Write(
+                    DateTime.Now.ToString() + "INFO: Log turned over"  
+                    + Environment.NewLine
+                );
             }
         }
     }
@@ -138,7 +141,7 @@ static class Lib
     /// <remarks>This method does nothing if Driver.DEBUG is false.
     /// </remarks>
     /// <param name="condition">Condition that must be true</param>
-    /// <param name="log6">Error log6 if condition is false to log.
+    /// <param name="log7">Error log7 if condition is false to log.
     /// </param>
     public static void assertTrue(bool cond, string msg = Constants.ERROR_ASSERT) 
     {
