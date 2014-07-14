@@ -87,9 +87,9 @@ static class Lib
             for (; File.Exists(filerPath + "\\" + newLogName + "_" + i + ".log"); i++)
                 ;
             File.Move(fullLogPath, filerPath + "\\" + newLogName + "_" + i + ".log");
-            log("INFO: Log turned over");
-        } else {
-            File.Create(fullLogPath);
+            log("INFO: Log turned over" + Environment.NewLine);
+        } else if (!File.Exists(fullLogPath)) {
+            File.Create(fullLogPath).Close();
             log("INFO: Log created");
         }
 
@@ -102,16 +102,16 @@ static class Lib
 
             using (StreamWriter w = File.AppendText(imageLog)) {
                 w.Write(
-                    DateTime.Now.ToString() + "INFO: Log turned over"
-                    + Environment.NewLine
+                    DateTime.Now.ToString() + " INFO: Log turned over"
+                    + Environment.NewLine + Environment.NewLine
                 );
             }
-        } else {
-            File.Create(imageLog);
+        } else if (!File.Exists(imageLog)) {
+            File.Create(imageLog).Close();
             using (StreamWriter w = File.AppendText(imageLog)) {
                 w.Write(
-                    DateTime.Now.ToString() + "INFO: File created"
-                    + Environment.NewLine
+                    DateTime.Now.ToString() + " INFO: File created"
+                    + Environment.NewLine + Environment.NewLine
                 );
             }
         }
