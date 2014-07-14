@@ -81,13 +81,16 @@ static class Lib
             Directory.CreateDirectory(filerPath);
         }
 
-        if (File.Exists(fullLogPath) 
+        if (File.Exists(fullLogPath)
                 && (new FileInfo(fullLogPath)).Length > Constants.LOG_SIZE_LIMIT) {
 
-            for ( ; File.Exists(filerPath + "\\" + newLogName + "_" + i + ".log"); i++)
+            for (; File.Exists(filerPath + "\\" + newLogName + "_" + i + ".log"); i++)
                 ;
             File.Move(fullLogPath, filerPath + "\\" + newLogName + "_" + i + ".log");
             log("INFO: Log turned over");
+        } else {
+            File.Create(fullLogPath);
+            log("INFO: Log created");
         }
 
         if (File.Exists(imageLog)
@@ -99,7 +102,15 @@ static class Lib
 
             using (StreamWriter w = File.AppendText(imageLog)) {
                 w.Write(
-                    DateTime.Now.ToString() + "INFO: Log turned over"  
+                    DateTime.Now.ToString() + "INFO: Log turned over"
+                    + Environment.NewLine
+                );
+            }
+        } else {
+            File.Create(imageLog);
+            using (StreamWriter w = File.AppendText(imageLog)) {
+                w.Write(
+                    DateTime.Now.ToString() + "INFO: File created"
                     + Environment.NewLine
                 );
             }
