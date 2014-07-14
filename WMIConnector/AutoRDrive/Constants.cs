@@ -130,7 +130,7 @@ static class Constants
 
     //
     // Threading constants
-    public const int RUNNER_TIME    = 1 * 60000;   // 1 minutes
+    public const int RUNNER_TIME    = 10 * 60000;   // 10 minutes
     public const int SERVER_TIME    = 1 * 60000;    // 1 minute
     public const int TS_TIMEOUT     = 1 * 60000;    // 1 minute
 
