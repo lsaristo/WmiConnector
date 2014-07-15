@@ -30,8 +30,6 @@ static class Constants
     public const string BU_FILE_EXT         = ".arc";
     public const string PROC_NAME           = "AutoRDrive"; // Don't use 'exe'
 
-
-
     //
     // XName elements. These are used for XML parsing and must match XML tags. 
     public static readonly XName SAVEDIRBASE        = "SaveDirectoryBasePath";

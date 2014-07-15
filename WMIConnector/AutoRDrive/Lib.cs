@@ -23,7 +23,7 @@ static class Lib
     //
     // Logging constants.
     private const string FILE_LOGS = "Filed Logs";
-    private const int LOG_SIZE_LIMIT = 20000; // Bytes
+    private const int LOG_SIZE_LIMIT = 200000; // Bytes
     
     private static string logFile = null;
     private static string logPath = null;

@@ -13,6 +13,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.OleDb;
+using System.Threading;
 namespace AutoBack 
 {
 
@@ -41,6 +42,7 @@ class RemoteHost
     public String                  ArgsSetter      { get; set; }
     public String                  RdiFile         { get; set; }
     public String                  SaveFile        { get; set; }
+    public Boolean                 LastChance      { get; set; }
     public Int32                   HistoryCount    { get; set; }
     public Int32                   PID             { get; set; }
     public ManagementScope         Scope           { get; set; }
@@ -56,13 +58,13 @@ class RemoteHost
     public bool execute()
     {
         try {
-            if (!Enabled && !Driver.NO_EXECUTE) { return false; }
-            if (!preConnect() || !Enabled) { return false; }
+            if (!Enabled || Driver.NO_EXECUTE) { return false; }
             makeSaveDirectory();
             if (!makeSaveFile()) { return false; }
             consolodateSaveDirs();
             cleanSaveDirectory();
             generateRdi();
+            LastChance = false;
             PID = invokeMethod();
         } catch (Exception e) {
             Lib.logException(e, HostName);
@@ -89,7 +91,7 @@ class RemoteHost
     /// <summary>
     /// Query remote host and verify hostname is accurate. 
     /// </summary>
-    public void verifyHostname() 
+    public Boolean verifyHostname() 
     {
         ObjectQuery query = 
             new ObjectQuery("Select csname from Win32_OperatingSystem");
@@ -103,10 +105,12 @@ class RemoteHost
                 HostName = m["csname"].ToString();
                 String warn =
                     "WARNING: Hostname per config: " + oldName 
-                    + " but WMI says " + HostName + ". Changing";
+                    + " but WMI says " + HostName + ". Aborting";
                 Lib.log(warn);
+                return false;
             }
         }
+        return true;
     }
 
     public String queryWMI(String inQuery, String property)
@@ -118,8 +122,12 @@ class RemoteHost
         ManagementObjectCollection queryCol = searcher.Get();
         String outString = "";
 
-        foreach(var m in queryCol) {
-            outString += m[property] + ",";
+        try {
+            foreach (var m in queryCol) {
+                outString += m[property] + ",";
+            }
+        } catch (Exception) {
+            return "";
         }
         return outString;
     }
@@ -131,6 +139,20 @@ class RemoteHost
     public Boolean isUp()
     {
         return ((new Ping()).Send(HostAddress).Status == IPStatus.Success);
+    }
+
+    /// <summary>
+    /// Query remote computer to see if PID is still active.
+    /// </summary>
+    /// <returns></returns>
+    public Boolean processAlive() 
+    {
+        if (!isUp()) { return false; }
+        
+        String result = 
+            queryWMI("select * from win32_process where ProcessID=" + PID, "Name");
+
+        return result.Length > 0;
     }
 
     /// <summary>
@@ -161,6 +183,7 @@ class RemoteHost
             var ProgramArgs_Dummy = ConnectionClass.GetMethodParameters(Constants.METHOD);
             ProgramArgs["CommandLine"] = ArgsSetter;
             ConnectionClass.InvokeMethod(Constants.METHOD, ProgramArgs_Dummy, null);
+            if (!verifyHostname()) { return false; }
         } catch (Exception e) {
             Lib.logException(e, TEST_FAIL + " " + HostName);
             return false;
@@ -197,7 +220,6 @@ class RemoteHost
         return false;
     }
 
-
     /// <summary>
     /// Generate the custom RDI file from this remote host.
     /// </summary>
@@ -212,7 +234,14 @@ class RemoteHost
             + Driver.getConfigOption(Constants.RDIMASTER));
 
         String fullPath = SaveDir + "\\" + SaveFile;
+
+        if (File.Exists(fullPath)) { return; }
+         
         File.WriteAllText(RdiFile, fileText.Replace(Constants.PLACEHOLDER, fullPath));
+
+        //
+        // Sleep for 10 seconds for cache to catch up.
+        Thread.Sleep(10000);
     }
 
     /// <summary>

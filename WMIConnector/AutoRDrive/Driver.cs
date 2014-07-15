@@ -249,9 +249,33 @@ public class Driver
             foreach (String host in currentRunners.Keys) {
                 TimeSpan diff = DateTime.Now - currentRunners[host];
                 Lib.debug(host + " running for " + diff.TotalMinutes + " minutes so far.");
+                RemoteHost rm = getHostFromString(host);
+                
+                if (rm.LastChance) {
+                    Lib.debug(rm.HostName + " LastChance marker set. Abandoning");
+                    hostsToDelete.Add(host);
+                    continue;
+                } 
+                if (!rm.isUp()) {
+                    Lib.log("WARNING: Lost contact with host " + rm.HostName + ". Abandoning");
+                    hostsToDelete.Add(host);
+                    continue;
+                }
+                if (!rm.processAlive()) {
+                    Lib.log(
+                        "WARNING: Process not found " + rm.HostName
+                        + " will wait for one more check cycle before abandoning");
+                    rm.LastChance = true;
+                    continue;
+                } else {
+                    Lib.debug(rm.HostName + " PID " + rm.PID + " still active.");
+                }
+                
+                /*
                 if (diff.TotalMinutes >= ORPHAN_TIMEOUT) {
                     hostsToDelete.Add(host);
                 }
+                */
             }
 
             foreach(String host in hostsToDelete) {
@@ -456,7 +480,7 @@ public class Driver
             String log8 = "Executing " + host.HostName;
             String log4 = "Removing " + host.HostName + " (failed) from queue";
             String log5 = "Hosts in queue: ";
-            String log9 = "Skipping " + host;
+            String log9 = "Skipping " + host.HostName;
 
             foreach (String h in currentRunners.Keys) {
                 log5 += h + " ";
@@ -465,7 +489,15 @@ public class Driver
             Lib.debug(log6);
             Lib.debug(log5);
             Lib.debug(log7);
-            host.verifyHostname();
+
+            if (!host.Enabled) {
+                Lib.log(host.HostName + " is disabled. Ignoring");
+                continue;
+            }
+            if (!host.preConnect()) {
+                Lib.log(host.HostName + " connection failed. Skipping");
+                continue;
+            }
             runnerPhore.WaitOne();
             lock (runnerLock) {
                 currentRunners.Add(host.HostName, DateTime.Now);
@@ -665,10 +697,8 @@ public class Driver
     {
         IEnumerable<XElement> typeList = 
             readFileToXML(
-                getConfigOption(
-                    Constants.TARGETFILEPATH + "\\" 
-                    + getConfigOption(Constants.TARGETXMLFILENAME)
-                )
+                getConfigOption(Constants.TARGETFILEPATH) + "\\" 
+                + getConfigOption(Constants.TARGETXMLFILENAME)
             ).Descendants(Constants.CLASSES).Elements();
 
         Func<XElement, bool> condition =
