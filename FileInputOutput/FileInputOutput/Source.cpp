@@ -1,3 +1,10 @@
+/*
+ * Source.cpp
+ *
+ * Driver file to write logging results to a central coorindinating server and
+ * a log file stored somewhere on a network share. 
+ */
+
 #include<tchar.h>
 #include<stdio.h>
 #include<fstream>
@@ -8,8 +15,10 @@
 #define SERVERPORT      8172
 #define SERVER_NAME     "srvrdc01.geomartin.local"
 #define RESULT_STRING   "FAILURE"
-#define FILE_PATH       "\\\\backups.geomartin.local\\computerimagingprimary\\resources\\ImageCreation.log"
-#pragma comment(lib,    "ws2_32.lib")
+#define FILE_PATH       "\\\\backups.geomartin.local\\computerimagingprimary\\"\
+                        "resources\\ImageCreation.log"
+
+#pragma comment(lib, "ws2_32.lib")
 
 void messageCoordinator(char *, int);
 
@@ -32,22 +41,17 @@ int __cdecl _tmain()
     GetComputerName(name, &nameSize);
     _stprintf(result, _T("Result: %s\n\r"), _T(RESULT_STRING));
     _stprintf(netResult, _T("%s:%s%s"), name, _T(RESULT_STRING), _T("<EOF>"));
-    _stprintf(
-        data, 
-        _T("\n%2.2i-%2.2i-%4.4i, %2.2i-%2.2i: Hostname: %s, %s"), 
-        time.wMonth, time.wDay, time.wYear, time.wHour, time.wMinute,
+    _stprintf(  
+        data, _T("\n%2.2i-%2.2i-%4.4i, %2.2i-%2.2i: Hostname: %s, %s"), 
+        time.wMonth, time.wDay, time.wYear, time.wHour, time.wMinute, 
         name, result
     );
 
-    HANDLE file = CreateFile(
-        filename,
-        FILE_APPEND_DATA,
-        0,
-        NULL,
-        OPEN_ALWAYS,
-        FILE_ATTRIBUTE_NORMAL,
-        NULL
-    );
+    HANDLE file = 
+        CreateFile(
+            filename, FILE_APPEND_DATA, 0, NULL, OPEN_ALWAYS, 
+            FILE_ATTRIBUTE_NORMAL, NULL
+        );
     
     if (file == INVALID_HANDLE_VALUE) { 
         wprintf(L"File handle was invalid");    
@@ -67,9 +71,9 @@ int __cdecl _tmain()
  */
 void messageCoordinator(char *message, int len)
 {
-    WSADATA     wsa;
-    char*       server_ip;
-    int         sock_desc; 
+    WSADATA wsa;
+    char* server_ip;
+    int sock_desc; 
     struct  sockaddr_in server;
     struct  hostent*    host;
     

@@ -1,4 +1,10 @@
-﻿using System;
+﻿/*
+ * Driver.cs
+ * 
+ * Driver implementation. Primary program driver.
+ */
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -23,14 +29,50 @@ namespace AutoBack
 /// </remarks>
 public class Driver 
 {
-    private static  XDocument           targetXML;
+    //
+    // Exit codes
+    private const int EXIT_FAILURE   = -1;
+    private const int EXIT_SUCCESS   = 0;
+    private const int FATAL_INIT     = -2;
+    private const int FATAL_ARGS     = -3;
+    private const int FATAL_CONFIG   = -4;
+    private const int FATAL_TARGETS  = -5;
+    private const int FATAL_THREAD   = -6;
+    private const int FATAL_PCOUNT   = -7;
+    private const int FATAL_LOGGING  = -8;
+
+    //
+    // Threading constants
+    private const int RUNNER_TIME    = 10 * 60000;  // 10 minutes
+    private const int SERVER_TIME    = 1 * 60000;   // 1 minute
+    private const int TS_TIMEOUT     = 1 * 60000;   // 1 minute
+    public const int ORPHAN_TIMEOUT  = 150;         // minutes
+
+    //
+    // String constants for output / logging
+    private const string INFO_ALL_DONE = "************ DONE **************";
+    private const string INFO_WELCOME = "Auto R-Drive";
+    private const string ERROR_ARGUMENTS = "ERROR: invalid program arguments";
+    private const string ERROR_SENTINEL = "ERROR: Sentinel threw an exception";
+
+    //
+    // Misc
+    public static readonly string[] VALID_ARGUMENTS = {
+        Constants.WORKSTATION, 
+        Constants.OTHER, 
+        Constants.TEST, 
+        Constants.SERVER
+    };
+
+    //
+    // Class properties
     private static  XDocument           configXML;
     private static  List<String>        classesToTarget;
     private static  List<RemoteHost>    remoteHostList;
+    private static  ResultServer        resultServer;
     public static   Boolean             LOG;
     public static   Boolean             DEBUG;
     public static   Boolean             NO_EXECUTE;
-    public static   List<String>        failedRunners; 
     public static   Object              logLock;
     public static   Object              runnerLock;
     public static   Semaphore           runnerPhore;
@@ -50,10 +92,11 @@ public class Driver
     {
         //
         // Basic program setup
-        if(!init())                 { return Constants.FATAL_INIT; }
-        if(!isLoaner())             { return Constants.FATAL_PCOUNT; }
-        if(!parseProgramArgs(args)) { return Constants.FATAL_ARGS; }
-        if(!parseConfigOptions())   { return Constants.FATAL_CONFIG; }
+        if(!init())                 { return FATAL_INIT; }
+        if(!Lib.init())             { return FATAL_LOGGING; }
+        if(!isLoaner())             { return FATAL_PCOUNT; }
+        if(!parseProgramArgs(args)) { return FATAL_ARGS; }
+        if(!parseConfigOptions())   { return FATAL_CONFIG; }
         printWelcome();
         printProps();
         
@@ -64,17 +107,17 @@ public class Driver
             parseTargetFileXLS();
         } catch(Exception e) {
             Lib.logException(e);
-            return Constants.FATAL_TARGETS;
+            return FATAL_TARGETS;
         }
 
         //
         // Execute main sentinel thread. Last block before exit. 
         if(!runSentinel()) { 
-            Lib.log(Constants.ERROR_SENTINEL);
-            return Constants.EXIT_FAILURE;
+            Lib.log(ERROR_SENTINEL);
+            return EXIT_FAILURE;
         } else { 
-            Lib.log(Constants.INFO_ALL_DONE);
-            return Constants.EXIT_SUCCESS;
+            Lib.log(INFO_ALL_DONE);
+            return EXIT_SUCCESS;
         }
     }
 
@@ -89,7 +132,10 @@ public class Driver
             "ERROR: Only one instance of this program may run "
             + "at a time. Another is already running.";
 
-        var currentCount = Process.GetProcesses().Where(x => x.ToString().Contains("AutoRDrive"));
+        var currentCount = 
+            Process
+            .GetProcesses()
+            .Where(x => x.ToString().Contains("AutoRDrive"));
 
         if(currentCount.Count() > 1) {
             Lib.log(log1);
@@ -102,6 +148,36 @@ public class Driver
         }
         return true;
     }
+
+    /// <summary>
+    /// Construct a result server and initialize the thread that will run it.
+    /// </summary>
+    /// <returns>True if the thread to run the server has started.</returns>
+    private static Boolean startServ()
+    {
+        resultServer = new ResultServer();
+        if(!resultServer.init()) { return false; }
+        serverThread = new Thread(new ThreadStart(resultServer.runServer));
+        serverThread.Start();
+        return !(!serverThread.IsAlive && serverThread.Join(TS_TIMEOUT));
+    }
+
+    /// <summary>
+    /// Stop 
+    /// </summary>
+    /// <returns></returns>
+    private static Boolean stopServ()
+    {
+        Lib.debug("Stopping listening server");
+        resultServer.stop();
+        if (serverThread.Join(SERVER_TIME)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+
     
     /// <summary>
     /// Primary thread's execution loop. Create child threads and monitor their
@@ -111,45 +187,48 @@ public class Driver
     {
         String  log1    = "Runner thread has finished";
         String  log2    = "Sentinel is waiting for runnerThread to finish";
-        String  log3    = "Trying to stop socket server...";
-        String  log4    = "Server shutdown. Leaving";
+        String  log5    = "ERROR: Failed to start one or more support threads.";
 
-        ResultServer resultServer = new ResultServer();
-        runnerThread = new Thread(new ThreadStart(runnerInit));
-        serverThread = new Thread(new ThreadStart(resultServer.runServer));
-        serverThread.Start();
-
-        if(!serverThread.IsAlive && serverThread.Join(Constants.TS_TIMEOUT)) {
-            Lib.log(Constants.ERROR_SERV_THREAD);
+        //
+        // Start support threads
+        if(!startServ() || !startRunner()) {
+            Lib.log(log5);
             return false;
-        } 
-        runnerThread.Start();
+        }
 
         //
         // Wait for runnerThread
         while (true) {  
-            if (runnerThread.Join(Constants.RUNNER_TIME)) { 
+            if (runnerThread.Join(RUNNER_TIME)) { 
                 Lib.debug(log1);
                 break;
             } else {
                 Lib.debug(log2);
-                purgeOld();
+
+                try { 
+                    purgeOld();
+                } catch (Exception e) {
+                    Lib.log("Something went wrong in purge");
+                    Lib.logException(e);
+                }
             }
         }
-        resultServer.stop(); // TODO: This method doesn't seem to be working.
-        Lib.debug(log3);
-        if (serverThread.Join(Constants.SERVER_TIME)) {
-            Lib.debug(log4);
-        } else {
-            Lib.log(Constants.WARN_SERVER_LOCK);
-        }
-      
+
         //
-        // Deal with the hosts that failed. 
-        foreach(String failure in failedRunners) {
-            handleFailure(failure);
-        }
+        // Shutdown the ResultServer
+        if(!stopServ()) { Lib.debug("Warning: ResultServer not responding"); }
         return true;
+    }
+
+    /// <summary>
+    /// Run the thread that will run runMainLoop()
+    /// </summary>
+    /// <returns>True if started successfully.</returns>
+    private static bool startRunner()
+    {
+        runnerThread = new Thread(new ThreadStart(runnerInit));
+        runnerThread.Start();    
+        return !(!runnerThread.IsAlive && runnerThread.Join(TS_TIMEOUT));
     }
 
     /// <summary>
@@ -165,20 +244,26 @@ public class Driver
     /// </summary>
     private static void purgeOld()
     {
+        List<String> hostsToDelete = new List<String>();
         lock (runnerLock) {
             foreach (String host in currentRunners.Keys) {
                 TimeSpan diff = DateTime.Now - currentRunners[host];
                 Lib.debug(host + " running for " + diff.TotalMinutes + " minutes so far.");
-                if (diff.TotalMinutes >= Constants.ORPHAN_TIMEOUT) {
-                    String msg = 
-                        "WARNING: host hasn't responded in " 
-                        + diff.TotalMinutes + " minutes. Orphaning";
-                    Lib.log(msg);
+                if (diff.TotalMinutes >= ORPHAN_TIMEOUT) {
+                    hostsToDelete.Add(host);
+                }
+            }
 
-                    if(!currentRunners.Remove(host)) {
-                        Lib.log("WARNING: Couldn't purge old host "+host);
-                    } else {
+            foreach(String host in hostsToDelete) {
+                if(!currentRunners.Remove(host)) {
+                    Lib.log("WARNING: Failed to ORPHAN " + host);
+                } else {
+                    Lib.log("Orphaned " + host + " (probably) releasing its lock");
+
+                    try { 
                         runnerPhore.Release();
+                    } catch(Exception e) {
+                        Lib.logException(e);
                     }
                 }
             }
@@ -219,13 +304,11 @@ public class Driver
     {
         //
         // Basic parameters must be initialized first.
-        targetXML = null;
         classesToTarget = new List<String>();
         remoteHostList = new List<RemoteHost>();
         LOG = true;
         DEBUG = true;
         NO_EXECUTE = false;
-        failedRunners = new List<String>();
         logLock = new Object();
         runnerLock = new Object();
         currentRunners = new Dictionary<String, DateTime>();
@@ -234,10 +317,10 @@ public class Driver
         // Get config file data or die.
         try {
             configXML = readFileToXML(Constants.CONFIG_FILE);
-        } catch (Exception e) {
+        } catch (Exception) {
             return false;
         }
-        Lib.logInit();
+
         return true;
     }
 
@@ -258,9 +341,13 @@ public class Driver
             Lib.log(log2);
         }
 
-        if(File.Exists(failedHost.SaveDir + "\\" + failedHost.SaveFile)) {
+        String badFile = 
+            failedHost.SaveDir + "\\" + failedHost.SaveFile 
+            + Constants.BU_FILE_EXT;
+
+        if(File.Exists(badFile)) {
             try { 
-                File.Delete(failedHost.SaveDir + "\\" + failedHost.SaveFile);
+                File.Delete(badFile);
                 Lib.log(log4);
             } catch(Exception e) {
                 Lib.log(log3);
@@ -350,12 +437,11 @@ public class Driver
     /// </summary>
     private static Boolean runMainLoop()
     {
-        String  log1    = "Runner thread entered main loop";
         String  log2    = "ERROR in runner thread. Listening server not alive";
         String  log3    = "FATAL: Server doesn't seem to have started. Leaving";
         int     stall   = 6;
 
-        while(!serverThread.IsAlive && serverThread.Join(Constants.TS_TIMEOUT)) {
+        while(!serverThread.IsAlive && serverThread.Join(TS_TIMEOUT)) {
             if((stall -= 1) > 0) {
                 Lib.log(log3);
                 return false;
@@ -379,6 +465,7 @@ public class Driver
             Lib.debug(log6);
             Lib.debug(log5);
             Lib.debug(log7);
+            host.verifyHostname();
             runnerPhore.WaitOne();
             lock (runnerLock) {
                 currentRunners.Add(host.HostName, DateTime.Now);
@@ -430,7 +517,7 @@ public class Driver
         string welcomeString = 
             Environment.NewLine
             + "###############################" + Environment.NewLine
-            + Constants.INFO_WELCOME + Environment.NewLine
+            + INFO_WELCOME + Environment.NewLine
             + "Version: "
             + System.Reflection.Assembly.GetEntryAssembly().GetName().Version
             + Environment.NewLine
@@ -449,6 +536,7 @@ public class Driver
             return XDocument.Load(file);
         } catch (Exception e) {
             Console.WriteLine("ERROR: Failed to read XML data");
+            Lib.logException(e);
             return null;
         }
     }
@@ -480,8 +568,8 @@ public class Driver
         }
 
         foreach(string arg in programArgs) {
-            if(!Constants.VALID_ARGUMENTS.Contains<string>(arg.ToLower())) {
-                Lib.log(Constants.ERROR_ARGUMENTS, Constants.LL_ERROR);
+            if(!VALID_ARGUMENTS.Contains<string>(arg.ToLower())) {
+                Lib.log(ERROR_ARGUMENTS);
                 return false;
             }
             if(!classesToTarget.Contains(arg)) { 
@@ -509,12 +597,8 @@ public class Driver
             LOG = cond(Constants.LOGGING);
             NO_EXECUTE = cond(Constants.WHATIF);
             count = Convert.ToInt32(getConfigOption(Constants.CONCURRENT_LIMIT));
-            targetXML = readFileToXML(
-                getConfigOption(Constants.TARGETFILEPATH) + "\\"
-                + getConfigOption(Constants.TARGETXMLFILENAME)
-            );
         } catch(Exception e) {
-            Lib.log(Constants.ERROR_ARGUMENTS);
+            Lib.log(ERROR_ARGUMENTS);
             Lib.logException(e);
             return false;
         }
@@ -534,15 +618,16 @@ public class Driver
     /// </remarks>
     private static void parseTargetFileXLS()
     {
+        
         String connString = 
-            "Provider=" + Constants.PROVIDER + ";Data Source=" 
+            @"Provider=Microsoft.Jet.OLEDB.4.0;Extended Properties=Excel 8.0;Data Source=" 
             + getConfigOption(Constants.TARGETFILEPATH) + "\\"
             + getConfigOption(Constants.TARGETFILENAME);
-
-        OleDbConnection     conn    = new OleDbConnection(connString);
-        DataTable           dt      = new DataTable();
+        OleDbConnection conn = new OleDbConnection(connString);
+        DataTable dt = new DataTable();
+        String query = @"Select * from [Sheet1$A2:L]";
         
-        (new OleDbDataAdapter(Constants.QUERY, conn)).Fill(dt);
+        (new OleDbDataAdapter(query, conn)).Fill(dt);
 
         foreach (DataRow dr in dt.Rows) {
             if (classesToTarget.Contains(dr[@"Class"].ToString().ToLower())) {
@@ -579,7 +664,13 @@ public class Driver
     private static void parseTargetFile()
     {
         IEnumerable<XElement> typeList = 
-            targetXML.Descendants(Constants.CLASSES).Elements();
+            readFileToXML(
+                getConfigOption(
+                    Constants.TARGETFILEPATH + "\\" 
+                    + getConfigOption(Constants.TARGETXMLFILENAME)
+                )
+            ).Descendants(Constants.CLASSES).Elements();
+
         Func<XElement, bool> condition =
             x => classesToTarget.Contains<string>(
                 x.Element(Constants.CLASSNAME).Value.ToLower()

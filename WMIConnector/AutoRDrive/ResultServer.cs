@@ -1,4 +1,10 @@
-﻿using System;
+﻿/*
+ * ResultServer.cs
+ * 
+ * ResultServer implementation.
+ */
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,24 +22,38 @@ namespace AutoBack
 /// </summary>
 class ResultServer 
 {   
-    public static       ManualResetEvent    reset;
-    
-    private Int32       port;
-    private Int32       bufferSize;
-    private Int32       backlog;
-    private IPEndPoint  localEndpoint;
-    private Socket      listener;
-    private Byte[]      bytes;
-    private Boolean     alive;
+    //
+    // Class networking constants.
+    public const String MSG_OK      = "success";
+    public const String MSG_EOF     = "<EOF>";
+    public const char   MSG_DELIM   = ':';
+    public const int    BACKLOG     = 100;
+    public const int    REC_TIMEOUT = 20 * 1000; // 20 seconds
+    public const int    BUFF_SIZE   = 1024;
+
+    //
+    // Static properties.
+    public static ManualResetEvent reset;
+ 
+    //
+    // Instance properties.
+    private Int32 port;
+    private Int32 bufferSize;
+    private Int32 backlog;
+    private IPEndPoint localEndpoint;
+    private Socket listener;
+    private Byte[] bytes;
+    private Boolean hasInit;
+
+    private const Int32 DATA_IN_LIMIT = BUFF_SIZE;
 
     /// <summary>
     /// Constructor for the ResultServer
     /// </summary>
     /// <param name="backlog">Backlog as defined by .NET</param>
-    /// <see cref="Constants.BACKLOG"/>
-    public ResultServer(int backlog = Constants.BACKLOG) 
+    public ResultServer(int backlog = BACKLOG) 
     {
-        bufferSize = Constants.BUFF_SIZE;
+        bufferSize = BUFF_SIZE;
         reset = new ManualResetEvent(false); 
         port = Convert.ToInt32(Driver.getConfigOption(Constants.SERVER_PORT));
         localEndpoint = new IPEndPoint(IPAddress.Any, port);
@@ -43,68 +63,119 @@ class ResultServer
             ProtocolType.Tcp
         );
         this.backlog = backlog;
-        alive = true;
+        hasInit = false;
+    }
+
+    /// <summary>
+    /// Initialize this socket server.
+    /// </summary>
+    /// <returns>True if Socket successfully bound and listening.</returns>
+    public Boolean init()
+    {
+        try {
+            listener.Bind(localEndpoint);
+            listener.Listen(backlog);
+            listener.ReceiveTimeout = REC_TIMEOUT;
+            hasInit = true;
+            return true;
+        } catch(SocketException se) {
+            Lib.log("ERROR: Socket error " + se.ErrorCode);
+            return false;
+        } catch(Exception e) {
+            Lib.logException(e);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Public interface for use with ThreadStart class.
+    /// </summary>
+    public void runServer()
+    {
+        if(!hasInit && !init()) {
+            Lib.log("ERROR: SERVER FAILED TO START");
+            return;
+        }
+        if(!begin()) { Lib.log("WARNING: Server exited unexpectedly"); }
     }
 
     /// <summary>
     /// Start this server and enter a listening loop for connections until 
     /// stop() is called.
     /// </summary>  
-    public void runServer()
+    private Boolean begin()
     {
         String log1 = "Starting result server";
-        String log2 = "Caught exception inside server loop...";
-        String log3 = "ERROR: Caught exception in runServer()...";
+        String log2 = "ERROR: You must first init() this server before running.";
+        String log3 = "Accept threw a socket exception. This might be normal";
         String log4 = "Server listening on port " + port;
         String log5 = "Server received TCP connection";
         String log6 = "Got EOF, closing socket";
+        String log7 = "WARNING: Server ignored malformed data received";
 
         Lib.debug(log1);
+        if(!hasInit) {
+            Lib.log(log2);
+            return false;
+        }
 
-        try {
-            listener.Bind(localEndpoint);
-            listener.Listen(backlog);
-            listener.ReceiveTimeout = Constants.REC_TIMEOUT;
+        while (true) {
+            int totalDataIn = 0;
+            int bytesRec = 0;
+            String inData = "";
+            Lib.debug(log4);
+            Socket handler;
+            
+            try {
+                handler = listener.Accept();
+            } catch (SocketException) {
+                Lib.log(log3);
+                break;
+            }
 
-            while(alive) {
-                try {
-                    String inData = "";
-                    Lib.debug(log4);
-                    Socket handler = listener.Accept();
-                    Lib.debug(log5);
+            Lib.debug(log5);
 
-                    while(true) {
-                        bytes = new byte[bufferSize];
-                        int bytesRec = handler.Receive(bytes);
-                        inData += Encoding.Unicode.GetString(bytes,0,bytesRec);
-                        if(inData.IndexOf(Constants.MSG_EOF) > -1) {
-                            Lib.debug(log6);
-                            break; 
-                        }
-                    }
-                    handler.Shutdown(SocketShutdown.Both);
-                    handler.Close();
-                    Lib.debug("Received connection with string " + inData);
-
-                    String[] responseArray = inData.Split(Constants.MSG_DELIM);
-                    String responseHost = responseArray[0];
-                    String responseResult = responseArray[1];
-
-                    Byte msg = 
-                        (responseResult.ToLower().Contains(Constants.MSG_OK))
-                        ? Constants.RESULT_OK
-                        : Constants.RESULT_ERR;
-                    Driver.handleMsg(responseHost, msg);
-                   
-                } catch(Exception e) { 
-                    Lib.debug(log2);
-                    Lib.debug(e.Message);
+            while ((totalDataIn += bytesRec) < DATA_IN_LIMIT) {
+                bytes = new byte[bufferSize];
+                bytesRec = handler.Receive(bytes);
+                inData += Encoding.Unicode.GetString(bytes,0,bytesRec);
+                if(inData.IndexOf(MSG_EOF) > -1) {
+                    Lib.debug(log6);
+                    break; 
                 }
             }
-      } catch(Exception e) {
-            Lib.debug(log3);
-            Lib.logException(e);
+
+            handler.Shutdown(SocketShutdown.Both);
+            handler.Close();
+            if(!processReceivedData(inData)) {
+                Lib.log(log7);
+            }
         }
+        return true;
+    }
+
+    /// <summary>
+    /// Handle data that came in from a socket. 
+    /// </summary>
+    /// <param name="data">String of data</param>
+    /// <returns>True if data format was acceptable.</returns>
+    private Boolean processReceivedData(String data)
+    {
+        Lib.debug("Received connection with string " + data);
+
+        String[] responseArray = data.Split(MSG_DELIM);
+
+        if(!(responseArray.Length == 2)) { return false; }
+
+        String responseHost = responseArray[0];
+        String responseResult = responseArray[1];
+
+        Byte msg = 
+            (responseResult.ToLower().Contains(MSG_OK))
+            ? Constants.RESULT_OK
+            : Constants.RESULT_ERR;
+        Driver.handleMsg(responseHost, msg);
+        return true;
     }
 
     /// <summary>
@@ -113,8 +184,7 @@ class ResultServer
     /// <see cref="Constants.TIMEOUT"/>
     public void stop()
     {
-        listener.Close(Constants.REC_TIMEOUT);
-        alive = false;
+        listener.Close(REC_TIMEOUT);
     }
 } // End ResultServer class
 } // End AutoBack namespace

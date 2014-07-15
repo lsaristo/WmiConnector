@@ -1,4 +1,9 @@
-﻿using System;
+﻿/*
+ * Lib.cs
+ * 
+ * Lib implementation for logging.
+ */
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,11 +20,16 @@ namespace AutoBack
 /// <see cref="Constants.cs"/>
 static class Lib 
 {
-    private static string logFile       = null;
-    private static string logPath       = null;
-    private static string fullLogPath   = null;
-    private static string imageLog      = null;
-    private static string filerPath     = null;
+    //
+    // Logging constants.
+    private const string FILE_LOGS = "Filed Logs";
+    private const int LOG_SIZE_LIMIT = 20000; // Bytes
+    
+    private static string logFile = null;
+    private static string logPath = null;
+    private static string fullLogPath = null;
+    private static string imageLog = null;
+    private static string filerPath = null;
 
     /// <summary>
     /// Write an event to the System log.
@@ -30,26 +40,20 @@ static class Lib
     /// <param name="log7">Message to log.</param>
     /// <see cref="Constants.cs"/> 
     /// <see cref="config.xml"/>
-    public static void log(string msg, string host = null, string level = Constants.LL_INFO)
+    public static void log(string msg, string host = null)
     {
+        if (!Driver.LOG) { return; }
+        String logString = 
+        DateTime.Now.ToString() + ": " + msg + Environment.NewLine;
+
         lock (Driver.logLock) {
-            if (!Driver.LOG) { return; }
-
-            string fallbackLog = null;
-            string logString = null;
-
+            Console.WriteLine(logString);
             try {
-                fallbackLog = Environment.CurrentDirectory + Constants.FALLBACK_LOG;
-                logString = DateTime.Now.ToString() + ": " + msg + Environment.NewLine;
-                Console.WriteLine(logString);
-
                 using (StreamWriter w = File.AppendText(fullLogPath)) {
                     w.Write(logString);
                 }
             } catch (Exception e) {
-                using (StreamWriter w = File.AppendText(fallbackLog)) {
-                    w.Write(logString + " " + e);
-                }
+                Console.WriteLine("ERROR: LOGGING FAILURE: " + e.Message);
             }
         }
     }
@@ -57,14 +61,20 @@ static class Lib
     /// <summary>
     /// Perform log initialization. 
     /// </summary>
-    public static void logInit()
+    public static Boolean init()
     {
         logFile = Driver.getConfigOption(Constants.LOGFILE);
         logPath = Driver.getConfigOption(Constants.LOGPATH);
         fullLogPath = logPath + "\\" + logFile;
         imageLog = Driver.getConfigOption(Constants.IMAGE_LOG);
-        filerPath = logPath + "\\" + Constants.FILE_LOGS;
-        turnover();
+        filerPath = logPath + "\\" + FILE_LOGS;
+
+        try { 
+            turnover();
+        } catch(IOException) {
+            return false;
+        }
+        return true;
     }
 
     /// <summary>
@@ -77,43 +87,26 @@ static class Lib
         String newImageName =
             imageLog.Substring(imageLog.LastIndexOf("\\") + 1).Split('.')[0];
 
-        if (!Directory.Exists(filerPath)) {
+        if (!Directory.Exists(filerPath)) { 
             Directory.CreateDirectory(filerPath);
         }
-
-        if (File.Exists(fullLogPath)
-                && (new FileInfo(fullLogPath)).Length > Constants.LOG_SIZE_LIMIT) {
-
-            for (; File.Exists(filerPath + "\\" + newLogName + "_" + i + ".log"); i++)
-                ;
-            File.Move(fullLogPath, filerPath + "\\" + newLogName + "_" + i + ".log");
-            log("INFO: Log turned over" + Environment.NewLine);
-        } else if (!File.Exists(fullLogPath)) {
+        if(!File.Exists(fullLogPath)) {
             File.Create(fullLogPath).Close();
             log("INFO: Log created");
         }
+        if(!File.Exists(imageLog)) {
+            // TODO: Log something.
+        }
 
-        if (File.Exists(imageLog)
-                && (new FileInfo(imageLog)).Length > Constants.LOG_SIZE_LIMIT) {
-
-            for (i = 1; File.Exists(filerPath + "\\" + newImageName + "_" + i + ".log"); i++)
+        if ((new FileInfo(fullLogPath)).Length > LOG_SIZE_LIMIT) {
+            for (; File.Exists( filerPath+"\\"+newLogName+"_"+i+".log" ); i++)
                 ;
-            File.Move(imageLog, filerPath + "\\" + newImageName + "_" + i + ".log");
+            File.Move(fullLogPath, filerPath+"\\"+newLogName+"_"+i+".log");
+            log("INFO: Log turned over" + Environment.NewLine);
+        }
 
-            using (StreamWriter w = File.AppendText(imageLog)) {
-                w.Write(
-                    DateTime.Now.ToString() + " INFO: Log turned over"
-                    + Environment.NewLine + Environment.NewLine
-                );
-            }
-        } else if (!File.Exists(imageLog)) {
-            File.Create(imageLog).Close();
-            using (StreamWriter w = File.AppendText(imageLog)) {
-                w.Write(
-                    DateTime.Now.ToString() + " INFO: File created"
-                    + Environment.NewLine + Environment.NewLine
-                );
-            }
+        if ((new FileInfo(imageLog)).Length > LOG_SIZE_LIMIT) {
+            // TODO probably do something with turning the image log.
         }
     }
 
@@ -126,16 +119,15 @@ static class Lib
     /// <param name="message">Message to write.</param>
     public static void debug(string message, string host = null)
     {
-        if (Driver.DEBUG) {
-            log(msg: "[ DEBUG ]: " + message);
-        }
+        if (Driver.DEBUG) { log(msg: "[ DEBUG ]: " + message); }
     }
 
     /// <summary>
     /// Write an exception to the log. 
     /// </summary>
     /// <param name="e">Exception object</param>
-    /// <param name="hostIdentifier">Hostname (if applicable) that caused it</param>
+    /// <param name="hostIdentifier">Hostname (if applicable) that caused it
+    /// </param>
     public static void logException(Exception e, string hostIdentifier = null)
     {
         string error = 
@@ -146,25 +138,6 @@ static class Lib
         log(error);
     }
 
-    /// <summary>
-    /// Assert that a condition holds. Used for debugging. 
-    /// </summary>
-    /// <remarks>This method does nothing if Driver.DEBUG is false.
-    /// </remarks>
-    /// <param name="condition">Condition that must be true</param>
-    /// <param name="log7">Error log7 if condition is false to log.
-    /// </param>
-    public static void assertTrue(bool cond, string msg = Constants.ERROR_ASSERT) 
-    {
-        if (Driver.DEBUG && !cond) {
-            debug(msg + " " + cond);
-            Environment.Exit(Constants.EXIT_FAILURE);
-        }              
-    }
 
-    internal static void log(object p)
-    {
-        throw new NotImplementedException();
-    }
 }
 }

@@ -1,4 +1,10 @@
-﻿using System;
+﻿/*
+ * RemoteHost.cs
+ * 
+ * RemoteHost class implementation.
+ */
+
+using System;
 using System.Management;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -16,6 +22,16 @@ namespace AutoBack
 /// </summary>
 class RemoteHost 
 {
+    //
+    // WMI Constants
+    private const string WMI_ROOT = @"\root\cimv2";
+
+    //
+    // Logging
+    public const string LOG_SUCCESS = "Successfully executed command";
+    public const string TEST_FAIL = "Error: Could not contact host";
+
+    // Instance properties.
     public Boolean                 Enabled         { get; set; }
     public String                  SaveDir         { get; set; }
     public String                  HostAddress     { get; set; }
@@ -47,25 +63,36 @@ class RemoteHost
             consolodateSaveDirs();
             cleanSaveDirectory();
             generateRdi();
-            Int32 PID = 
-                Convert.ToInt32(
-                ConnectionClass.InvokeMethod(Constants.METHOD, 
-                ProgramArgs, null)["ProcessID"]);
+            PID = invokeMethod();
         } catch (Exception e) {
             Lib.logException(e, HostName);
             return false;
         }
-        Lib.log(Constants.LOG_SUCCESS + " " + HostName);
+        Lib.log(LOG_SUCCESS + " " + HostName);
         return true;
+    }
+
+    /// <summary>
+    /// Connect to the target system and execute the command.
+    /// </summary>
+    /// <returns>PID reported back from the target system.</returns>
+    private Int32 invokeMethod()
+    {
+        return Convert.ToInt32(
+            ConnectionClass.InvokeMethod(
+                Constants.METHOD, 
+                ProgramArgs, null
+            )["ProcessID"]
+        );
     }
 
     /// <summary>
     /// Query remote host and verify hostname is accurate. 
     /// </summary>
-    private void verifyHostname() 
+    public void verifyHostname() 
     {
         ObjectQuery query = 
-            new ObjectQuery(Constants.WMI_QUERY);
+            new ObjectQuery("Select csname from Win32_OperatingSystem");
         ManagementObjectSearcher searcher =
             new ManagementObjectSearcher(Scope, query);
         ManagementObjectCollection queryCol = searcher.Get();
@@ -78,18 +105,6 @@ class RemoteHost
                     "WARNING: Hostname per config: " + oldName 
                     + " but WMI says " + HostName + ". Changing";
                 Lib.log(warn);
-                lock (Driver.runnerLock) {
-                    if (Driver.currentRunners.ContainsKey(oldName)) {
-                        DateTime dt = Driver.currentRunners[oldName];
-                        Driver.currentRunners.Remove(oldName);
-                        Driver.currentRunners.Add(HostName, dt);
-                        Lib.debug("Changed currentRunner for " + oldName
-                            + "to " + HostName + " at "
-                            + Driver.currentRunners[HostName]);
-                    } else {
-                        Lib.log("WARNING: Couldn't find " + oldName + " in list");
-                    }
-                }
             }
         }
     }
@@ -110,6 +125,15 @@ class RemoteHost
     }
 
     /// <summary>
+    /// Ping host to see if it is alive.
+    /// </summary>
+    /// <returns>True if host responds to ICMP Echo</returns>
+    public Boolean isUp()
+    {
+        return ((new Ping()).Send(HostAddress).Status == IPStatus.Success);
+    }
+
+    /// <summary>
     /// Test connection to the RemoteHost. This method is similar to execute()
     /// but only attempts to establish a WMI connection to the RemoteHost and
     /// does not actually execute any commands.
@@ -123,23 +147,22 @@ class RemoteHost
 
         //
         // Ping to see if host is up.
-        if(!((new Ping()).Send(HostAddress).Status == IPStatus.Success)) {
+        if(!isUp()) { 
             Lib.log("Host not responding. Skipping");
-            return false;
+            return false; 
         }
 
         try {
-            Scope = new ManagementScope("\\\\" + HostAddress + Constants.WMI_ROOT);
+            Scope = new ManagementScope("\\\\" + HostAddress + WMI_ROOT);
             Scope.Connect();
-            ManagementPath mp = new ManagementPath(Constants.CONNECTION_CLASS);
+            ManagementPath mp = new ManagementPath("win32_process");
             ConnectionClass = new ManagementClass(Scope, mp, null);
             ProgramArgs = ConnectionClass.GetMethodParameters(Constants.METHOD);
             var ProgramArgs_Dummy = ConnectionClass.GetMethodParameters(Constants.METHOD);
             ProgramArgs["CommandLine"] = ArgsSetter;
             ConnectionClass.InvokeMethod(Constants.METHOD, ProgramArgs_Dummy, null);
-            verifyHostname();
         } catch (Exception e) {
-            Lib.logException(e, Constants.TEST_FAIL + " " + HostName);
+            Lib.logException(e, TEST_FAIL + " " + HostName);
             return false;
         }
         Lib.debug("WMI Connection Established: " + " " + HostName);
@@ -158,11 +181,12 @@ class RemoteHost
             "Couldn't resolve host " + HostName + " falling back to " 
             + HostAddress;
 
-        try {
-            if(HostName.Equals("")) {
-                Lib.log(log1);
-                return false;
-            }
+        if(HostName.Equals("")) {
+            Lib.log(log1);
+            return false;
+        }
+
+        try {    
             HostAddress = Dns.GetHostEntry(HostName).AddressList[0].ToString();
             Lib.debug(log2);
             return true;
