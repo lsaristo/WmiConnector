@@ -112,6 +112,11 @@ class ResultServer
         String log5 = "Server received TCP connection";
         String log6 = "Got EOF, closing socket";
         String log7 = "WARNING: Server ignored malformed data received";
+        String log8 = 
+            "WARNING: Caught general exception in Socket Server. This is not"
+            + "normal";
+        String log9 = "Trying to close and re-initialize listener...";
+        String log10 = "ERROR: Couldn't restart listener. Aborting execution";
 
         Lib.debug(log1);
         if(!hasInit) {
@@ -125,12 +130,22 @@ class ResultServer
             String inData = "";
             Lib.debug(log4);
             Socket handler;
-            
+
             try {
                 handler = listener.Accept();
             } catch (SocketException) {
-                Lib.log(log3);
+                Lib.debug(log3);
                 break;
+            } catch (Exception e) {
+                Lib.log(log8);
+                Lib.logException(e);
+                Lib.debug(log9);
+                if (!init()) {
+                    Lib.log(log10);
+                    return false;
+                }
+                Lib.log("Listener has re-established binding");
+                continue;
             }
 
             Lib.debug(log5);
@@ -147,9 +162,7 @@ class ResultServer
 
             handler.Shutdown(SocketShutdown.Both);
             handler.Close();
-            if(!processReceivedData(inData)) {
-                Lib.log(log7);
-            }
+            if(!processReceivedData(inData)) { Lib.log(log7); }
         }
         return true;
     }

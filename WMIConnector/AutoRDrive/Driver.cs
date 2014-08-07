@@ -185,9 +185,10 @@ public class Driver
     /// </summary>
     private static Boolean runSentinel()
     {
-        String  log1    = "Runner thread has finished";
-        String  log2    = "Sentinel is waiting for runnerThread to finish";
-        String  log5    = "ERROR: Failed to start one or more support threads.";
+        String log1 = "Runner thread has finished";
+        String log2 = "Sentinel is waiting for runnerThread to finish";
+        String log5 = "ERROR: Failed to start one or more support threads.";
+        String log6 = "ERROR: Result Server has crashed. Aborting.";
 
         //
         // Start support threads
@@ -198,7 +199,12 @@ public class Driver
 
         //
         // Wait for runnerThread
-        while (true) {  
+        while (true) {
+            if (!serverThread.IsAlive) {
+                Lib.log(log6);
+                runnerThread.Abort();
+                return false;
+            }
             if (runnerThread.Join(RUNNER_TIME)) { 
                 Lib.debug(log1);
                 break;
@@ -354,11 +360,11 @@ public class Driver
     /// <param name="failure">Hostname of failed RemoteHost</param>
     private static void handleFailure(String failure) 
     {
-        RemoteHost  failedHost  = getHostFromString(failure);
-        String      log1        = "WARNING: " + failure + " reported failed backup";
-        String      log2        = "WARNING: Couldn't remove " + failure + " from runners";
-        String      log3        = "ERROR: Couldn't delete corrupt backup file";
-        String      log4        = "Deleted corrupt backup " + failedHost.SaveDir;
+        RemoteHost failedHost = getHostFromString(failure);
+        String log1 = "WARNING: " + failure + " reported failed backup";
+        String log2 = "WARNING: Couldn't remove " + failure + " from runners";
+        String log3 = "ERROR: Couldn't delete corrupt backup file";
+        String log4 = "Deleted corrupt backup " + failedHost.SaveDir;
 
         Lib.log(log1);
         if(!removeFromRunners(failure)) {
@@ -449,7 +455,8 @@ public class Driver
     private static RemoteHost getHostFromString(String host)
     {
         try { 
-            return remoteHostList.Where(x => x.HostName.Equals(host)).ToArray()[0];
+            return remoteHostList
+                .Where(x => x.HostName.Equals(host)).ToArray()[0];
         } catch(Exception e) {
             Lib.logException(e);
             return null;
@@ -476,7 +483,7 @@ public class Driver
 
         foreach (RemoteHost host in remoteHostList) {
             String log6 = "Trying " + host.HostName;
-            String log7 = "Trying to add to queue and semaphore";
+            String log7 = "Asking for semaphore...";
             String log8 = "Executing " + host.HostName;
             String log4 = "Removing " + host.HostName + " (failed) from queue";
             String log5 = "Hosts in queue: ";
@@ -486,19 +493,22 @@ public class Driver
                 log5 += h + " ";
             }
 
+            Lib.debug("Working on " + host.HostName);
+            Lib.debug(log7);
+            runnerPhore.WaitOne();
             Lib.debug(log6);
             Lib.debug(log5);
-            Lib.debug(log7);
 
             if (!host.Enabled) {
                 Lib.log(host.HostName + " is disabled. Ignoring");
+                runnerPhore.Release();
                 continue;
             }
             if (!host.preConnect()) {
                 Lib.log(host.HostName + " connection failed. Skipping");
+                runnerPhore.Release();
                 continue;
             }
-            runnerPhore.WaitOne();
             lock (runnerLock) {
                 currentRunners.Add(host.HostName, DateTime.Now);
             }

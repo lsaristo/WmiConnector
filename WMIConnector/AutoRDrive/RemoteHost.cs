@@ -26,6 +26,7 @@ class RemoteHost
     //
     // WMI Constants
     private const string WMI_ROOT = @"\root\cimv2";
+    private const int DAYS_APART = 5;
 
     //
     // Logging
@@ -214,8 +215,7 @@ class RemoteHost
             Lib.debug(log2);
             return true;
         } catch (Exception e) {
-            Lib.log(log3);
-            Lib.logException(e);
+            Lib.debug(log3);
         }
         return false;
     }
@@ -252,9 +252,23 @@ class RemoteHost
     {
         SaveFile = HostName + "_" + DateTime.Now.ToString(Constants.DATE_FORMAT);
 
+        
         if(File.Exists(SaveDir + "\\" + SaveFile + Constants.BU_FILE_EXT)) {
             Lib.debug(SaveDir + "\\" + SaveFile + " already exists, Skipping");
             return false;
+        }
+
+        if (!Directory.Exists(SaveDir)) { return true; }
+
+        String[] files = Directory.GetFiles(SaveDir, Constants.BU_FILE_WILD).ToArray();
+
+        if (files.Length > 0) {
+            foreach (String file in files) {
+                if ((DateTime.Now - File.GetCreationTime(file)).TotalHours < 24*DAYS_APART) {
+                    Lib.log(file + " is less than " + DAYS_APART + " old. Skipping host");
+                    return false;
+                }
+            }
         }
         return true;
     }
