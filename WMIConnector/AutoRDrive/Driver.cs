@@ -276,12 +276,6 @@ public class Driver
                 } else {
                     Lib.debug(rm.HostName + " PID " + rm.PID + " still active.");
                 }
-                
-                /*
-                if (diff.TotalMinutes >= ORPHAN_TIMEOUT) {
-                    hostsToDelete.Add(host);
-                }
-                */
             }
 
             foreach(String host in hostsToDelete) {
@@ -350,7 +344,6 @@ public class Driver
         } catch (Exception) {
             return false;
         }
-
         return true;
     }
 
@@ -408,9 +401,9 @@ public class Driver
     /// <param name="host">Hostname of RemoteHost</param>
     private static void handleSuccess(String host)
     {
-        String      log1 = "ERROR: Couldn't get object for " + host;
-        String      log2 = "ERROR: " + host + " not found in runners list";
-        String      log3 = "Host: " + host + " reports result: SUCCESS";
+        String log1 = "ERROR: Couldn't get object for " + host;
+        String log2 = "ERROR: " + host + " not found in runners list";
+        String log3 = "Host: " + host + " reports result: SUCCESS";
         RemoteHost  host_object;
         
         if((host_object = getHostFromString(host)) == null) {
@@ -432,7 +425,7 @@ public class Driver
     /// <param name="log7">Result of operation</param>
     public static void handleMsg(String host, Byte msg)
     {
-        String log1 = "Handing success for " + host;
+        String log1 = "Handling success for " + host;
         String log2 = "Handling failure for " + host;
 
         switch(msg) {
@@ -455,8 +448,7 @@ public class Driver
     private static RemoteHost getHostFromString(String host)
     {
         try { 
-            return remoteHostList
-                .Where(x => x.HostName.Equals(host)).ToArray()[0];
+            return remoteHostList.Where(x => x.HostName.Equals(host)).ToArray()[0];
         } catch(Exception e) {
             Lib.logException(e);
             return null;
@@ -660,7 +652,6 @@ public class Driver
     /// </remarks>
     private static void parseTargetFileXLS()
     {
-        
         String connString = 
             @"Provider=Microsoft.Jet.OLEDB.4.0;Extended Properties=Excel 8.0;Data Source=" 
             + getConfigOption(Constants.TARGETFILEPATH) + "\\"
@@ -729,10 +720,7 @@ public class Driver
                             ,ArgsSetter = 
                                 getConfigOption(Constants.EXECUTABLE_PATH) + "\\" 
                                 + getConfigOption(Constants.EXECUTABLE_NAME)
-                            ,Enabled = 
-                                param.Element(Constants.ENABLED)
-                                .Value
-                                .Equals(Constants.TRUE)
+                            ,Enabled = param.Element(Constants.ENABLED).Value.Equals(Constants.TRUE)
                             ,RdiFile = 
                                 getConfigOption(Constants.RDIMASTERPATH) + "\\custom\\" 
                                 + param.Element(Constants.HOST_NAME).Value + ".rdi"
